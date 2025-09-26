@@ -44,6 +44,7 @@ repos:
         additional_dependencies: [
             "types-PyYAML",
             "types-requests",
+            "types-redis",
             "pydantic"
         ]
 

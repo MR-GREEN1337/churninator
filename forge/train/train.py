@@ -15,7 +15,6 @@ from peft import LoraConfig, get_peft_model, PeftModel
 import argparse
 
 # --- Local Project Imports ---
-# These imports work because of the `pip install -e .` command you run.
 from forge.train.datasets import FinetuneDataset
 from forge.train.collator import FinetuneDataCollator
 
