@@ -14,8 +14,6 @@ from src.core.settings import get_settings
 from forge.utils.function_parser import parse_function_call
 
 settings = get_settings()
-# In a real app, you would define this in your settings.py
-INFERENCE_SERVER_URL = "http://inference:8001/predict"
 
 # Create one Redis client for the module to reuse connections
 redis_client = redis.Redis(
