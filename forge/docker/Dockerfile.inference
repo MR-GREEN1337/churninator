@@ -53,6 +53,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Expose the API port.
 EXPOSE 8001
 
-# Run the inference server using uv run. This is the modern, fast
 # way to execute commands within the managed environment.
 CMD ["uv", "run", "uvicorn", "backend.inference.server:app", "--host", "0.0.0.0", "--port", "8001"]

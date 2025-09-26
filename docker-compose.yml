@@ -33,8 +33,8 @@ services:
 
   backend_api:
     build:
-      context: .
-      dockerfile: backend/Dockerfile.api # Assumes you've created this Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile.api # Assumes you've created this Dockerfile
     container_name: churninator_api
     depends_on:
       postgres_db:
@@ -52,8 +52,8 @@ services:
 
   inference_server:
     build:
-      context: .
-      dockerfile: backend/inference/Dockerfile.inference # Assumes you've created this
+      context: ./backend/inference
+      dockerfile: Dockerfile.inference # Assumes you've created this
     container_name: churninator_inference
     volumes:
       # Mount your fine-tuned models from the forge into the container
@@ -74,8 +74,8 @@ services:
 
   worker:
     build:
-      context: .
-      dockerfile: backend/worker/Dockerfile.worker # Assumes you've created this
+      context: ./backend/worker
+      dockerfile: Dockerfile.worker # Assumes you've created this
     container_name: churninator_worker
     depends_on:
       - redis_queue

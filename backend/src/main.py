@@ -1,14 +1,14 @@
 # backend/src/main.py
-from contextlib import asynccontextmanager
+# from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.core.settings import get_settings
-from src.db.postgresql import engine
+# from src.db.postgresql import engine
 
 # Ensure Dramatiq tasks are discovered by importing them
 from src.api import router as api_router
 
-
+"""
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # On Startup
@@ -17,11 +17,11 @@ async def lifespan(app: FastAPI):
     # On Shutdown
     print("🔌 Shutting down Churninator API...")
     await engine.dispose()
-    print("Database connection pool closed.")
+    print("Database connection pool closed.")"""
 
 
 settings = get_settings()
-app = FastAPI(title=settings.PROJECT_NAME, debug=settings.DEBUG, lifespan=lifespan)
+app = FastAPI(title=settings.PROJECT_NAME, debug=settings.DEBUG)  # , lifespan=lifespan)
 
 # --- Middleware ---
 app.add_middleware(
