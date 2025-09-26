@@ -32,23 +32,14 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
-    # --- Database (PostgreSQL) ---
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_SERVER: str
-    POSTGRES_DB: str
-    DB_SSL_MODE: Literal["disable", "require", "verify-ca", "verify-full"] = "disable"
-    DB_ECHO_LOG: bool = False
-
     # Connection Pooling
     POSTGRES_POOL_SIZE: int = 10
     POSTGRES_MAX_OVERFLOW: int = 5
+    POSTGRES_POOL_TIMEOUT: int = 30
+    POSTGRES_POOL_RECYCLE: int = 1800
+    POSTGRES_USE_SSL: bool = True
 
-    @property
-    def DATABASE_URL(self) -> PostgresDsn:
-        return PostgresDsn(
-            f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}/{self.POSTGRES_DB}"
-        )
+    DATABASE_URL: PostgresDsn
 
     # --- Redis / Dramatiq ---
     REDIS_HOST: str

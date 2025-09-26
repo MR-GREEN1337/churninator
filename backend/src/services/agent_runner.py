@@ -1,5 +1,5 @@
 from sqlmodel.ext.asyncio.session import AsyncSession
-from src.worker.tasks import run_churninator_agent
+from worker.tasks import run_churninator_agent
 from src.db.models.agent_run import AgentRun, AgentRunCreate
 
 

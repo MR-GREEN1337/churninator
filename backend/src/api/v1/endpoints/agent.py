@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status
 from sqlmodel.ext.asyncio.session import AsyncSession
-from src.db.postgresql import get_db_session
+from src.db.postgresql import get_session
 from src.db.models.agent_run import AgentRunCreate, AgentRunRead
 from src.services import agent_runner
 
@@ -19,7 +19,7 @@ async def get_current_user_placeholder():
 @router.post("/run", status_code=status.HTTP_202_ACCEPTED, response_model=AgentRunRead)
 async def create_agent_run(
     run_in: AgentRunCreate,
-    db: AsyncSession = Depends(get_db_session),
+    db: AsyncSession = Depends(get_session),
     current_user: dict = Depends(get_current_user_placeholder),  # Secure this endpoint
 ):
     """
