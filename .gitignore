@@ -111,6 +111,7 @@ coverage.xml
 # Large datasets - these should be downloaded by a script, not stored in git.
 # Add specific data file extensions you will be using.
 /forge/data/raw/
+forge/data/eval_data/
 /forge/data/processed/
 *.csv
 *.parquet

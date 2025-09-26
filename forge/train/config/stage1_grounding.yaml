@@ -1,0 +1,25 @@
+# --- Model & Data ---
+base_model: "HuggingFaceM4/Idefics2-8b-base"
+data_file: "stage1_grounding.jsonl" # This will be found in the processed data directory
+output_dir: "checkpoints/churninator-idefics2-8b-grounded-v1" # Where to save the model adapters
+
+# --- Training Hyperparameters ---
+training_mode: "lora"
+lora_r: 32
+lora_alpha: 64
+lora_dropout: 0.1
+
+learning_rate: 1.0e-4
+num_train_epochs: 1
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 16 # Effective batch size of 32
+gradient_checkpointing: true
+optim: "paged_adamw_8bit" # Use paged AdamW for memory efficiency
+
+# --- Precision & Hardware ---
+bf16: true # Use bfloat16 for modern GPUs (A100, H100, 4090)
+fp16: false # Set to true if using older GPUs like V100 or 3090
+
+# --- Logging ---
+report_to: "wandb"
+logging_steps: 20

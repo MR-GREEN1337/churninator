@@ -41,10 +41,11 @@ repos:
         args: [--ignore-missing-imports]
         # Mypy can be slow, so you might want to run it manually or in CI
         # To enable it, uncomment the line above.
-        # additional_dependencies: [
-        #    "pydantic", "fastapi", "celery", "redis",
-        #    "torch", "transformers", "datasets"
-        # ]
+        additional_dependencies: [
+            "types-PyYAML",
+            "types-requests",
+            "pydantic"
+        ]
 
 # ==============================================================================
 # Frontend Hooks - Apply to `web/` directory

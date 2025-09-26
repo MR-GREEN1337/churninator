@@ -1,0 +1,69 @@
+# forge/docker/Dockerfile.train (UV Edition)
+
+# ==============================================================================
+# The Churninator Forge - Training Environment (Powered by UV)
+# ==============================================================================
+# Start from the official NVIDIA CUDA base image for full GPU support.
+FROM nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
+
+# --- Stage 1: Setup Environment and System Dependencies ---
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Install essential system packages for Python 3.11, git-lfs, and curl.
+# We will use the system python provided by the base image.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    python3.11 \
+    python3-pip \
+    python3.11-venv \
+    git \
+    git-lfs \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Make python3.11 the default python
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
+
+# --- Stage 2: Install UV and Python Dependencies ---
+WORKDIR /app
+
+# Install uv using the official installer script.
+ADD https://astral.sh/uv/install.sh /uv-installer.sh
+RUN sh /uv-installer.sh && rm /uv-installer.sh
+# Add uv to the system PATH.
+ENV PATH="/root/.local/bin:${PATH}"
+
+# Copy only the dependency definition files first to leverage Docker layer caching.
+COPY ./pyproject.toml ./uv.lock* ./
+# uv.lock* will copy uv.lock if it exists, otherwise it will be skipped.
+
+# Create a virtual environment using uv. This is the modern equivalent of venv.
+RUN uv venv
+
+# Install all dependencies from the lock file (if present) or pyproject.toml
+# into the virtual environment created by `uv venv`.
+# The --system-site-packages flag is important in CUDA images to inherit
+# system-level packages that might be linked to the drivers.
+RUN uv sync --locked --system-site-packages
+
+# Copy our own package's setup file.
+COPY ./setup.py .
+# Perform an editable install of our project into the uv environment.
+RUN uv pip install -e .
+
+# --- Stage 3: Copy Application Code ---
+# This is done last so that code changes don't invalidate the dependency cache.
+COPY ./forge /app/forge
+COPY ./backend /app/backend
+COPY ./frontend /app/frontend
+
+# --- Final Configuration ---
+# Activate the virtual environment for any commands run in the container.
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Default to an interactive bash shell for manual training runs.
+CMD ["bash"]
