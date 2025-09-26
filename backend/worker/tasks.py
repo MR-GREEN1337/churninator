@@ -6,7 +6,7 @@ import json
 import base64
 from playwright.async_api import async_playwright, Page, Browser
 
-from .broker import redis_broker
+from worker.broker import redis_broker
 from src.core.settings import get_settings
 
 # This is the crucial import. We're bringing in the parser from the forge.

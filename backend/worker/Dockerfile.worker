@@ -2,7 +2,7 @@
 # The Churninator - Dramatiq Agent Worker (with Virtual Display)
 # ==============================================================================
 # Start from a slim Python base image to keep the size down.
-FROM python:3.11-slim-bookworm
+FROM python:3.13-slim-bookworm
 
 # --- Stage 1: System Dependencies ---
 ENV DEBIAN_FRONTEND=noninteractive
