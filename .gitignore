@@ -187,3 +187,5 @@ forge/data/eval_data/
 
 # Docker
 docker-compose.override.yml
+
+context.txt

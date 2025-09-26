@@ -1,0 +1,50 @@
+# ==============================================================================
+# The Churninator Forge - Master Configuration
+# ==============================================================================
+
+# --- API KEYS & TRACKING ---
+# Global credentials for services.
+hf_token: "hf_YOUR_HUGGINGFACE_TOKEN_HERE"
+wandb_project: "TheChurninatorForge"
+wandb_entity: "your_wandb_username" # <-- CHANGE THIS
+
+# --- CORE MODEL SELECTION ---
+# The open-source VLM that will be forged into a Churninator.
+base_model: "HuggingFaceTB/SmolLM-1.7B-32k-instruct"
+
+# --- PATH CONFIGURATION ---
+# Defines the physical layout of the Forge.
+data_dir: "forge/data"
+output_dir: "forge/checkpoints"
+
+# --- DEFAULT HYPERPARAMETERS ---
+# These are the default settings for all training runs.
+# A run-specific config (e.g., stage1_grounding.yaml) can override any of these.
+defaults:
+  # Training Strategy
+  training_mode: "lora" # qlora is enabled by the quantization_config in train.py
+  num_train_epochs: 1
+  learning_rate: 1.0e-4
+  optim: "paged_adamw_8bit" # Efficient optimizer for QLoRA
+
+  # Batching
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 16 # Effective batch size = (batch_size * grad_accum)
+
+  # Hardware & Precision
+  bf16: true
+  fp16: false
+  gradient_checkpointing: true
+
+  # LoRA (Low-Rank Adaptation) Defaults
+  # These are good starting points for efficient fine-tuning.
+  lora_r: 16          # Rank of the update matrices. Higher is more expressive but uses more memory.
+  lora_alpha: 32      # LoRA scaling factor. Often 2 * lora_r.
+  lora_dropout: 0.05  # Dropout probability for LoRA layers.
+
+  # Logging
+  report_to: "wandb"
+  logging_steps: 10
+  save_strategy: "epoch" # Options: "no", "epoch", "steps"
+  save_steps: 500        # Only used if save_strategy is "steps"
+  save_total_limit: 2    # Only keep the last 2 checkpoints to save disk space
