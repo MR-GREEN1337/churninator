@@ -1,0 +1,82 @@
+# ==============================================================================
+# Global Hooks - Apply to all files in the repository
+# ==============================================================================
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+    -   id: check-added-large-files
+        args: ['--maxkb=2048'] # No files > 2MB (models should be gitignored)
+    -   id: check-case-conflict
+    -   id: check-merge-conflict
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+
+-   repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+    -   id: detect-secrets
+        args: ['--baseline', '.secrets.baseline'] # Generate baseline first
+
+# ==============================================================================
+# Python Hooks - Apply to `backend/` and `forge/` directories
+# ==============================================================================
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+    # Run the linter
+    -   id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^(backend|forge)/
+    # Run the formatter
+    -   id: ruff-format
+        files: ^(backend|forge)/
+
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+    -   id: mypy
+        files: ^(backend|forge)/
+        args: [--ignore-missing-imports]
+        # Mypy can be slow, so you might want to run it manually or in CI
+        # To enable it, uncomment the line above.
+        # additional_dependencies: [
+        #    "pydantic", "fastapi", "celery", "redis",
+        #    "torch", "transformers", "datasets"
+        # ]
+
+# ==============================================================================
+# Frontend Hooks - Apply to `web/` directory
+# ==============================================================================
+-   repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+    -   id: prettier
+        files: ^web/.*\.(js|jsx|ts|tsx|css|scss|md|json)$
+        args: ['--write'] # Auto-format files
+
+-   repo: https://github.com/pre-commit/mirrors-eslint
+    rev: ''
+    hooks:
+    -   id: eslint
+        files: ^web/.*\.(js|jsx|ts|tsx)$
+        args: [--fix]
+        additional_dependencies:
+        -   eslint@8.57.0
+        -   typescript@5.4.5
+        -   '@typescript-eslint/parser@7.9.0'
+        -   '@typescript-eslint/eslint-plugin@7.9.0'
+        -   'eslint-plugin-react@7.34.1'
+        -   'eslint-config-next@14.2.3'
+
+# ==============================================================================
+# Frontend Type Checking - A special case
+# ==============================================================================
+-   repo: local
+    hooks:
+    -   id: tsc-no-emit
+        name: Run tsc --noEmit
+        entry: bash -c 'cd web && npm run typecheck || exit 1'
+        language: system
+        files: ^web/.*\.(ts|tsx)$

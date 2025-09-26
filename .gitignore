@@ -1,0 +1,188 @@
+# ==============================================================================
+# General & OS-Specific Ignores
+# ==============================================================================
+# Compiled source #
+###################
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Packages #
+############
+# it's better to unpack these files and commit the raw source
+# git has its own built in compression methods
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Logs and databases #
+######################
+*.log
+*.sql
+*.sqlite
+*.sqlite3
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ==============================================================================
+# Python & Machine Learning (for `backend/` and `forge/`)
+# ==============================================================================
+
+# Python Environments
+/venv/
+/env/
+/.venv/
+/.env/
+/activate
+/pip-selfcheck.json
+
+# Byte-compiled / optimized / C extensions
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+# Usually dist/ but behave like compiled files
+*.spec
+
+# Mypy, Ruff, Pytest and other test runners
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.tox/
+.nox/
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytype/
+
+# IPython Notebook
+.ipynb_checkpoints
+
+# Jupyter Notebook
+# These are often checked in, but large outputs should be cleared before commit.
+# Add this if you want to force notebooks to be committed without outputs.
+# **/*.ipynb.outputs
+
+# ML / AI Specific
+# =================
+# Large datasets - these should be downloaded by a script, not stored in git.
+# Add specific data file extensions you will be using.
+/forge/data/raw/
+/forge/data/processed/
+*.csv
+*.parquet
+*.arrow
+*.jsonl
+
+# Models and checkpoints - NEVER commit large model files.
+/backend/inference/models/*
+!/backend/inference/models/.gitkeep
+/forge/checkpoints/
+/forge/runs/
+*.pt
+*.pth
+*.bin
+*.onnx
+*.safetensors
+
+# W&B (Weights & Biases) local artifacts
+/wandb/
+
+# ==============================================================================
+# Frontend - Next.js / Node.js (for `frontend/`)
+# ==============================================================================
+
+# Node dependencies
+/frontend/node_modules/
+
+# Next.js build output
+/frontend/.next/
+/frontend/out/
+
+# Other build artifacts
+/frontend/build
+
+# Local environment variables
+/frontend/.env.local
+/frontend/.env.development.local
+/frontend/.env.test.local
+/frontend/.env.production.local
+
+# Test results
+/frontend/coverage/
+
+# Debug logs
+/frontend/npm-debug.log*
+/frontend/yarn-debug.log*
+/frontend/yarn-error.log*
+/frontend/lerna-debug.log*
+
+# ==============================================================================
+# Editor & IDE Specific
+# ==============================================================================
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains / PyCharm
+.idea/
+
+# Sublime Text
+*.sublime-workspace
+
+# ==============================================================================
+# Project Specific
+# ==============================================================================
+
+# Secrets baseline file for `detect-secrets` pre-commit hook
+.secrets.baseline
+
+# Docker
+docker-compose.override.yml
