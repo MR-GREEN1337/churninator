@@ -5,6 +5,12 @@
 # This is the most reliable way to build.
 FROM vllm/vllm-openai:latest
 
+RUN apt-get update && apt-get install -y \
+    gcc g++ make git curl \
+    libffi-dev libpq-dev \
+    python3.12-dev \
+ && rm -rf /var/lib/apt/lists/*
+
 # --- Stage 1: System Dependencies & Setup ---
 # The base image already contains Python, CUDA, and PyTorch.
 # We just need to install our application dependencies.
@@ -21,7 +27,7 @@ COPY ./backend/inference/pyproject.toml ./uv.lock* ./
 
 # Use uv to install our app's dependencies.
 # We don't need a venv as we are in a controlled container environment.
-RUN uv pip install -r requirements.txt --system
+RUN uv sync --no-dev
 
 # Copy and perform an editable install of our project code.
 COPY setup.py .
