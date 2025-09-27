@@ -1,3 +1,4 @@
+// web/src/components/dashboard/sidebar.tsx
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -8,7 +9,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
-  BotMessageSquare,
   Settings,
   History,
   Pencil,
@@ -16,7 +16,7 @@ import {
   Trash2,
   Sun,
   Moon,
-  Globe, // Added Globe icon for fallback
+  Globe,
 } from "lucide-react";
 import { cn, getFaviconUrl, getDomainFromUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,56 +34,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { Logo } from "@/components/shared/logo";
-
-// --- TYPE DEFINITIONS & MOCK DATA ---
-type AgentRun = {
-  id: string;
-  name: string;
-  status: "RUNNING" | "COMPLETED" | "FAILED";
-  targetUrl: string;
-  createdAt: string;
-};
-
-const mockAgentRuns: AgentRun[] = [
-  {
-    id: "run-1",
-    name: "Onboard Vercel",
-    status: "RUNNING",
-    targetUrl: "https://vercel.com",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "run-2",
-    name: "Test Clerk Signup",
-    status: "RUNNING",
-    targetUrl: "https://clerk.com",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "run-3",
-    name: "Analyze Stripe Pricing",
-    status: "COMPLETED",
-    targetUrl: "https://stripe.com",
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: "run-4",
-    name: "Scrape GitHub Homepage",
-    status: "FAILED",
-    targetUrl: "https://github.com",
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: "run-5",
-    name: "A very long run name to test...",
-    status: "COMPLETED",
-    targetUrl: "https://this-is-a-very-long-domain-name-example.co",
-    createdAt: new Date(Date.now() - 8 * 86400000).toISOString(),
-  },
-];
+import { useAgentRuns } from "@/hooks/use-agent-runs"; // LIVE DATA HOOK
+import { AgentRun } from "@/types"; // TYPE DEFINITION
+import { Skeleton } from "@/components/ui/skeleton"; // LOADING STATE UI
 
 // --- FAVICON COMPONENT WITH FALLBACK ---
 function FaviconWithFallback({
@@ -91,11 +46,31 @@ function FaviconWithFallback({
   size = 24,
   className = "",
 }: {
-  domain: string;
+  domain: string | null;
   size?: number;
   className?: string;
 }) {
   const [faviconError, setFaviconError] = useState(false);
+
+  if (!domain) {
+    // Handle null domain case gracefully
+    return (
+      <div
+        className={cn(
+          "flex items-center justify-center bg-muted rounded-sm",
+          className,
+        )}
+      >
+        <Globe
+          className={cn(
+            "text-muted-foreground",
+            size === 32 ? "h-5 w-5" : "h-4 w-4",
+          )}
+        />
+      </div>
+    );
+  }
+
   const faviconUrl = getFaviconUrl(domain, size);
 
   if (faviconError) {
@@ -133,10 +108,11 @@ function StatusIndicator({ status }: { status: AgentRun["status"] }) {
   return (
     <div
       className={cn(
-        "h-2.5 w-2.5 rounded-full shrink-0",
+        "h-2.5 w-2.5 rounded-full shrink-0 border-2 border-background",
         status === "RUNNING" && "bg-blue-500 animate-pulse",
         status === "COMPLETED" && "bg-green-500",
         status === "FAILED" && "bg-red-500",
+        status === "PENDING" && "bg-yellow-500",
       )}
     />
   );
@@ -152,7 +128,11 @@ function RunItem({
   const pathname = usePathname();
   const href = `/dashboard/run/${run.id}`;
   const isActive = pathname === href;
-  const domain = getDomainFromUrl(run.targetUrl);
+  const domain = getDomainFromUrl(run.target_url);
+  const displayName =
+    run.task_prompt.length > 30
+      ? `${run.task_prompt.substring(0, 30)}...`
+      : run.task_prompt;
 
   // --- COLLAPSED VIEW: FAVICON WITH TIGHTER CORNER STATUS ---
   if (isCollapsed) {
@@ -167,28 +147,25 @@ function RunItem({
                 isActive && "bg-accent",
               )}
             >
-              {/* Active State Ring */}
               <div
                 className={cn(
                   "absolute inset-0 rounded-lg ring-2 ring-offset-2 ring-offset-background transition-all",
                   isActive ? "ring-primary" : "ring-transparent",
                 )}
               />
-              {/* Favicon with Fallback */}
               <FaviconWithFallback
                 domain={domain}
                 size={32}
                 className="h-8 w-8"
               />
-              {/* TIGHTER CORNER STATUS INDICATOR */}
               <div className="absolute -bottom-0.5 -right-0.5">
                 <StatusIndicator status={run.status} />
               </div>
             </Link>
           </TooltipTrigger>
           <TooltipContent side="right">
-            <p className="font-semibold">{run.name}</p>
-            <p className="text-xs text-muted-foreground">{run.targetUrl}</p>
+            <p className="font-semibold">{displayName}</p>
+            <p className="text-xs text-muted-foreground">{run.target_url}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -207,14 +184,13 @@ function RunItem({
       )}
     >
       <div className="flex items-center gap-3 min-w-0">
-        {/* Favicon in Expanded View */}
         <div className="relative shrink-0">
           <FaviconWithFallback domain={domain} size={24} className="h-6 w-6" />
           <div className="absolute -bottom-0.5 -right-0.5">
             <StatusIndicator status={run.status} />
           </div>
         </div>
-        <span className="truncate">{run.name}</span>
+        <span className="truncate">{displayName}</span>
       </div>
       <div className="opacity-0 group-hover:opacity-100 transition-opacity">
         <DropdownMenu>
@@ -262,11 +238,10 @@ function ThemeToggle({ isCollapsed }: { isCollapsed: boolean }) {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
+                size={isCollapsed ? "icon" : "default"}
                 className={cn(
                   "w-full",
-                  isCollapsed
-                    ? "justify-center"
-                    : "justify-start gap-3 rounded-md px-3 py-2",
+                  !isCollapsed && "justify-start gap-3 rounded-md px-3 py-2",
                 )}
               >
                 <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -291,7 +266,9 @@ function ThemeToggle({ isCollapsed }: { isCollapsed: boolean }) {
             </DropdownMenuContent>
           </DropdownMenu>
         </TooltipTrigger>
-        <TooltipContent side="right">Toggle Theme</TooltipContent>
+        {isCollapsed && (
+          <TooltipContent side="right">Toggle Theme</TooltipContent>
+        )}
       </Tooltip>
     </TooltipProvider>
   );
@@ -305,15 +282,20 @@ export function Sidebar({
   isCollapsed: boolean;
   setIsCollapsed: (isCollapsed: boolean) => void;
 }) {
-  const agentRuns = mockAgentRuns;
+  const { runs: agentRuns, isLoading } = useAgentRuns();
 
   const runGroups = useMemo(() => {
+    if (!agentRuns) return { Running: [], Recent: [] };
+
     const groups: { [key: string]: AgentRun[] } = { Running: [], Recent: [] };
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
     agentRuns.forEach((run) => {
-      if (run.status === "RUNNING") groups["Running"].push(run);
-      else if (new Date(run.createdAt) > sevenDaysAgo)
+      if (run.status === "RUNNING" || run.status === "PENDING") {
+        groups["Running"].push(run);
+      } else if (new Date(run.created_at) > sevenDaysAgo) {
         groups["Recent"].push(run);
+      }
     });
     return groups;
   }, [agentRuns]);
@@ -325,17 +307,14 @@ export function Sidebar({
         isCollapsed ? "w-20" : "w-72",
       )}
     >
-      {/* Header */}
       <div
         className={cn(
-          "flex h-16 shrink-0 items-center border-b",
+          "flex h-12 shrink-0 items-center border-b",
           isCollapsed ? "justify-center" : "px-4",
         )}
       >
         <Logo hideText={isCollapsed} />
       </div>
-
-      {/* Main Content */}
       <div className="flex flex-1 flex-col gap-4 py-4">
         <div className="px-4">
           <TooltipProvider delayDuration={0}>
@@ -354,50 +333,61 @@ export function Sidebar({
                   </Link>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right">New Agent Run</TooltipContent>
+              {isCollapsed && (
+                <TooltipContent side="right">New Agent Run</TooltipContent>
+              )}
             </Tooltip>
           </TooltipProvider>
         </div>
-
         <ScrollArea className="flex-1 px-2">
-          <nav className="grid gap-1 px-2">
-            {Object.entries(runGroups).map(
-              ([groupName, groupRuns]) =>
-                groupRuns.length > 0 && (
-                  <div key={groupName} className="py-2">
-                    <h3
-                      className={cn(
-                        "text-xs font-semibold text-muted-foreground px-3 mb-2 tracking-wider",
-                        isCollapsed && "text-center",
-                      )}
-                    >
-                      {isCollapsed
-                        ? groupName.substring(0, 3).toUpperCase()
-                        : groupName}
-                    </h3>
-                    <div
-                      className={cn(
-                        "space-y-1",
-                        isCollapsed &&
-                          "grid grid-cols-1 justify-items-center gap-2",
-                      )}
-                    >
-                      {groupRuns.map((run) => (
-                        <RunItem
-                          key={run.id}
-                          run={run}
-                          isCollapsed={isCollapsed}
-                        />
-                      ))}
-                    </div>
-                  </div>
+          {isLoading ? (
+            <div className="grid gap-2 px-2">
+              {[...Array(5)].map((_, i) =>
+                isCollapsed ? (
+                  <Skeleton key={i} className="h-12 w-12 rounded-lg" />
+                ) : (
+                  <Skeleton key={i} className="h-10 w-full rounded-md" />
                 ),
-            )}
-          </nav>
+              )}
+            </div>
+          ) : (
+            <nav className="grid gap-1 px-2">
+              {Object.entries(runGroups).map(
+                ([groupName, groupRuns]) =>
+                  groupRuns.length > 0 && (
+                    <div key={groupName} className="py-2">
+                      <h3
+                        className={cn(
+                          "text-xs font-semibold text-muted-foreground px-3 mb-2 tracking-wider",
+                          isCollapsed && "text-center",
+                        )}
+                      >
+                        {isCollapsed
+                          ? groupName.substring(0, 3).toUpperCase()
+                          : groupName}
+                      </h3>
+                      <div
+                        className={cn(
+                          "space-y-1",
+                          isCollapsed &&
+                            "grid grid-cols-1 justify-items-center gap-2",
+                        )}
+                      >
+                        {groupRuns.map((run) => (
+                          <RunItem
+                            key={run.id}
+                            run={run}
+                            isCollapsed={isCollapsed}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ),
+              )}
+            </nav>
+          )}
         </ScrollArea>
       </div>
-
-      {/* Footer */}
       <div className="mt-auto border-t p-2 space-y-1">
         <TooltipProvider delayDuration={0}>
           <Tooltip>
@@ -416,7 +406,9 @@ export function Sidebar({
                 </Link>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">Full History</TooltipContent>
+            {isCollapsed && (
+              <TooltipContent side="right">Full History</TooltipContent>
+            )}
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -434,13 +426,13 @@ export function Sidebar({
                 </Link>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">Settings</TooltipContent>
+            {isCollapsed && (
+              <TooltipContent side="right">Settings</TooltipContent>
+            )}
           </Tooltip>
           <ThemeToggle isCollapsed={isCollapsed} />
         </TooltipProvider>
       </div>
-
-      {/* Collapse Button */}
       <div className="border-t p-2">
         <TooltipProvider delayDuration={0}>
           <Tooltip>

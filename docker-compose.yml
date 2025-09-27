@@ -55,6 +55,7 @@ services:
       context: ./
       dockerfile: backend/inference/Dockerfile.inference # Assumes you've created this
     container_name: churninator_inference
+    platform: linux/amd64
     volumes:
       # Mount your fine-tuned models from the forge into the container
       - ./forge/checkpoints:/app/models
@@ -74,9 +75,10 @@ services:
 
   worker:
     build:
-      context: ./backend/worker
-      dockerfile: Dockerfile.worker # Assumes you've created this
+      context: .
+      dockerfile: backend/worker/Dockerfile.worker # Assumes you've created this
     container_name: churninator_worker
+    platform: linux/amd64
     depends_on:
       - redis_queue
       - inference_server
@@ -107,7 +109,7 @@ services:
       - /app/node_modules # Use the node_modules from within the container
       - /app/.next
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 
 # --- Named Volumes ---
 # This ensures your Postgres data persists even if you stop and remove containers

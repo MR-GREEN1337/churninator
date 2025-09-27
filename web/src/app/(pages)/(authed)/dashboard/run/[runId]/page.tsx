@@ -1,96 +1,34 @@
+// web/src/app/(pages)/(authed)/dashboard/run/[runId]/page.tsx
 "use client";
 
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, BotMessageSquare, AlertTriangle } from "lucide-react";
-import { useParams } from "next/navigation"; // Hook to get URL params
-
-// --- TYPE DEFINITIONS & MOCK DATA ---
-// In a real app, these would come from your API client
-type AgentRun = {
-  id: string;
-  name: string;
-  status: "RUNNING" | "COMPLETED" | "FAILED";
-  targetUrl: string;
-  taskPrompt: string;
-  createdAt: string; // ISO string
-};
-
-const mockAgentRuns: AgentRun[] = [
-  {
-    id: "run-1",
-    name: "Onboard Vercel",
-    status: "RUNNING",
-    targetUrl: "https://vercel.com",
-    createdAt: new Date().toISOString(),
-    taskPrompt: "Sign up for a new hobby account.",
-  },
-  {
-    id: "run-2",
-    name: "Test Clerk Signup",
-    status: "RUNNING",
-    targetUrl: "https://clerk.com",
-    createdAt: new Date().toISOString(),
-    taskPrompt: "Analyze the developer signup flow.",
-  },
-  {
-    id: "run-3",
-    name: "Analyze Stripe Pricing",
-    status: "COMPLETED",
-    targetUrl: "https://stripe.com",
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    taskPrompt: "Find the enterprise pricing details.",
-  },
-  {
-    id: "run-4",
-    name: "Scrape GitHub Homepage",
-    status: "FAILED",
-    targetUrl: "https://github.com",
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    taskPrompt: "Extract all repository links.",
-  },
-];
+import { useParams } from "next/navigation";
+import { useAgentRun } from "@/hooks/use-agent-runs"; // LIVE DATA HOOK
+import { Skeleton } from "@/components/ui/skeleton"; // LOADING STATE UI
 
 export default function RunDetailPage() {
   const params = useParams();
   const runId = params.runId as string;
 
-  const [runDetails, setRunDetails] = useState<AgentRun | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Use our SWR hook to fetch live data for this specific run
+  const { run: runDetails, isLoading, isError } = useAgentRun(runId);
+
   const [agentLogs, setAgentLogs] = useState<string[]>([]);
   const logsContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // --- DATA FETCHING LOGIC ---
-    // In a real app, you would fetch this data from your backend API
-    // GET /api/v1/agent/run/{runId}
-    const fetchRunDetails = () => {
-      setIsLoading(true);
-      // Simulate API call
-      setTimeout(() => {
-        const foundRun = mockAgentRuns.find((run) => run.id === runId);
-        if (foundRun) {
-          setRunDetails(foundRun);
-          // Simulate initial logs
-          setAgentLogs([
-            `[INFO] Loading logs for run: ${foundRun.name}`,
-            `[STATUS] Current status: ${foundRun.status}`,
-          ]);
-        }
-        setIsLoading(false);
-      }, 500);
-    };
+    // --- WEBSOCKET LOGIC (Remains the same) ---
+    // Connect to your WebSocket to stream live logs for the specific runId.
+    if (
+      runDetails &&
+      (runDetails.status === "RUNNING" || runDetails.status === "PENDING")
+    ) {
+      // Replace this with your actual WebSocket connection
+      // e.g., const ws = new WebSocket(`ws://localhost:8000/ws/logs/${runId}`);
+      // ws.onmessage = (event) => setAgentLogs(prev => [...prev, event.data]);
 
-    if (runId) {
-      fetchRunDetails();
-    }
-  }, [runId]);
-
-  useEffect(() => {
-    // --- WEBSOCKET LOGIC ---
-    // This is where you would connect to your WebSocket to stream live logs
-    // for the specific runId.
-    if (runDetails && runDetails.status === "RUNNING") {
       const interval = setInterval(() => {
         setAgentLogs((prev) => [
           ...prev,
@@ -112,13 +50,29 @@ export default function RunDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 h-full p-4 sm:p-6 lg:p-8">
+        <Card className="lg:col-span-5 h-full flex flex-col">
+          <CardHeader>
+            <Skeleton className="h-8 w-1/3" />
+          </CardHeader>
+          <CardContent className="flex-1">
+            <Skeleton className="h-full w-full" />
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-2 flex flex-col h-full">
+          <CardHeader>
+            <Skeleton className="h-8 w-1/2" />
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4 flex-1">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-full w-full" />
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  if (!runDetails) {
+  if (isError || !runDetails) {
     return (
       <div className="flex h-full items-center justify-center text-center">
         <div>
@@ -139,20 +93,23 @@ export default function RunDetailPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Live Agent View</CardTitle>
           <div className="flex items-center gap-2">
-            {runDetails.status === "RUNNING" && (
+            {(runDetails.status === "RUNNING" ||
+              runDetails.status === "PENDING") && (
               <Loader2 className="h-4 w-4 animate-spin text-primary" />
             )}
-            <span className="text-sm text-muted-foreground">
-              Status: {runDetails.status}
+            <span className="text-sm text-muted-foreground capitalize">
+              Status: {runDetails.status.toLowerCase()}
             </span>
           </div>
         </CardHeader>
         <CardContent className="flex-1 flex items-center justify-center p-2 bg-black rounded-b-lg">
-          {runDetails.status === "RUNNING" ? (
+          {runDetails.status === "RUNNING" ||
+          runDetails.status === "PENDING" ? (
             <img
-              // This now correctly points to the MJPEG stream for the specific runId
-              src={`http://localhost:8000/api/v1/agent/stream/${runId}`}
-              alt={`Live view for ${runDetails.name}`}
+              // In a real app, this would point to your MJPEG stream
+              // src={`http://localhost:8000/api/v1/agent/stream/${runId}`}
+              src="https://placehold.co/1920x1080/000000/FFF?text=Live+Agent+View"
+              alt={`Live view for ${runDetails.task_prompt}`}
               className="w-full h-full object-contain"
             />
           ) : (
@@ -163,7 +120,6 @@ export default function RunDetailPage() {
                 This agent run has {runDetails.status.toLowerCase()}. The live
                 view is no longer active.
               </p>
-              {/* In a real app, you might show a final screenshot or a "Replay" button here */}
             </div>
           )}
         </CardContent>
@@ -179,13 +135,13 @@ export default function RunDetailPage() {
             <p>
               <strong className="font-semibold">Target:</strong>{" "}
               <span className="font-mono text-muted-foreground break-all">
-                {runDetails.targetUrl}
+                {runDetails.target_url}
               </span>
             </p>
             <p>
               <strong className="font-semibold">Objective:</strong>{" "}
               <span className="text-muted-foreground">
-                {runDetails.taskPrompt}
+                {runDetails.task_prompt}
               </span>
             </p>
           </div>

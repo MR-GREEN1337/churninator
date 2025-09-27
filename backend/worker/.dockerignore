@@ -1,4 +1,9 @@
-.env
-.env.docker
-.other_secrets
-tests
+# .dockerignore
+**/__pycache__
+**/.venv
+**/node_modules
+.git
+.vscode
+forge/data/raw
+forge/data/processed
+forge/checkpoints

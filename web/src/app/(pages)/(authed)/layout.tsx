@@ -2,23 +2,26 @@
 
 import { useState } from "react";
 import { Sidebar } from "@/components/dashboard/sidebar";
+import { Header } from "@/components/dashboard/header"; // <-- IMPORT THE NEW HEADER
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
     <div className="flex h-screen bg-muted/40">
-      {/* --- Sidebar --- */}
-      <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+      <Sidebar
+        isCollapsed={isSidebarCollapsed}
+        setIsCollapsed={setIsSidebarCollapsed}
+      />
 
-      {/* --- Page Content --- */}
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-        {children}
-      </main>
+      <div className="flex flex-1 flex-col overflow-y-auto">
+        <Header /> {/* <-- USE THE NEW HEADER HERE */}
+        <main className="flex-1">{children}</main>
+      </div>
     </div>
   );
 }
