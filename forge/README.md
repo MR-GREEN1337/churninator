@@ -29,8 +29,8 @@ This guide will walk you through the entire process of fine-tuning your first tw
 
 1.  **Clone the Repository:**
     ```bash
-    git clone https://github.com/your-username/the-churninator.git
-    cd the-churninator
+    git clone https://github.com/MR-GREEN1337/churninator.git
+    cd churninator
     ```
 2.  **Create Sync Scripts:** Create `sync_to_vast.sh` and `sync_from_vast.sh` scripts in your project root to easily manage code and model checkpoints. (Templates are available in the main project `README.md`).
 

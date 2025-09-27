@@ -150,7 +150,7 @@ const menuItems = [
   { name: "Pricing", href: "#pricing", id: "pricing" },
   {
     name: "GitHub",
-    href: "https://github.com/your-username/the-churninator",
+    href: "https://github.com/MR-GREEN1337/churninator",
     id: "github",
     withArrow: true,
   },

@@ -35,7 +35,7 @@ export const Logo: React.FC<LogoProps> = ({ className, hideText = true }) => {
         "group flex items-center gap-2.5 transition-opacity duration-300 hover:opacity-80",
         className,
       )}
-      aria-label="Recast Homepage"
+      aria-label="Churninator Homepage"
     >
       <div className="h-7 w-7">
         <svg
@@ -70,7 +70,7 @@ export const Logo: React.FC<LogoProps> = ({ className, hideText = true }) => {
             className,
           )}
         >
-          Recast
+          Churninator
         </span>
       )}
     </Link>
