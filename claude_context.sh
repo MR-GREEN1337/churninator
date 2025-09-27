@@ -74,7 +74,7 @@ Function: Contains all scripts for the two-stage AGUVIS fine-tuning methodology 
 Role: The "Mission Control & Production Engine."
 Sub-components:
 - API / Control Plane (backend/api/): FastAPI server for user requests and job queuing (Redis).
-- Agent Worker (backend/worker/): Scalable Celery workers running Playwright in a virtual display (Xvfb).
+- Agent Worker (backend/worker/): Scalable dramatiq workers running Playwright in a virtual display (Xvfb).
 - Inference Server (backend/inference/): Hosts the fine-tuned Churninator model (e.g., using vLLM), acting as the remote brain for the workers.
 
 3. The Frontend (web/):

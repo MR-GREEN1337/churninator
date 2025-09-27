@@ -17,14 +17,14 @@ ENV PYTHONDONTWRITEBYTECODE=1
 RUN pip install uv
 
 # Copy only the dependency files first for layer caching.
-COPY ./pyproject.toml ./uv.lock* ./
+COPY ./backend/inference/pyproject.toml ./uv.lock* ./
 
 # Use uv to install our app's dependencies.
 # We don't need a venv as we are in a controlled container environment.
 RUN uv pip install -r requirements.txt --system
 
 # Copy and perform an editable install of our project code.
-COPY ./setup.py .
+COPY setup.py .
 RUN uv pip install -e . --system
 
 # --- Stage 3: Copy Application Code ---

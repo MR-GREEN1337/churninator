@@ -50,7 +50,7 @@ RUN uv venv
 RUN uv sync --locked --system-site-packages
 
 # Copy our own package's setup file.
-COPY ./setup.py .
+COPY ../../setup.py .
 # Perform an editable install of our project into the uv environment.
 RUN uv pip install -e .
 

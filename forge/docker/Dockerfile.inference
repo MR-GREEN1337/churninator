@@ -28,19 +28,19 @@ RUN sh /uv-installer.sh && rm /uv-installer.sh
 ENV PATH="/root/.local/bin:${PATH}"
 
 # Copy dependency files.
-COPY ./pyproject.toml ./uv.lock* ./
+COPY backend/inference/pyproject.toml backend/inference/uv.lock* ./
 
 # Create a virtual environment and install dependencies.
 RUN uv venv
 RUN uv sync --locked --system-site-packages
 
 # Copy and install our local package.
-COPY ./setup.py .
+COPY setup.py .
 RUN uv pip install -e .
 
 # --- Stage 3: Copy Application and Model Code ---
-COPY ./backend/inference /app/backend/inference
-COPY ./forge/utils /app/forge/utils
+COPY backend/inference /app/backend/inference
+COPY forge/utils /app/forge/utils
 
 # Create the directory for mounting models.
 RUN mkdir -p /app/models

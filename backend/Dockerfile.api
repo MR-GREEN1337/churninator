@@ -14,7 +14,7 @@ ENV PATH="/root/.local/bin/:$PATH"
 
 # Copy dependency files and install dependencies
 COPY pyproject.toml uv.lock ./
-RUN uv sync --locked
+RUN uv sync --no-dev || uv sync --locked --no-dev
 
 # DEBUG STEP
 RUN uv run uvicorn --version

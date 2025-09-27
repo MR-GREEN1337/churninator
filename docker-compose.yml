@@ -52,8 +52,8 @@ services:
 
   inference_server:
     build:
-      context: ./backend/inference
-      dockerfile: Dockerfile.inference # Assumes you've created this
+      context: ./
+      dockerfile: backend/inference/Dockerfile.inference # Assumes you've created this
     container_name: churninator_inference
     volumes:
       # Mount your fine-tuned models from the forge into the container
