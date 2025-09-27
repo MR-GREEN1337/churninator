@@ -4,10 +4,28 @@ import base64
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
-from vllm import LLM, SamplingParams
+from PIL import Image
+from io import BytesIO
+
+# --- Environment Detection ---
+# A simple way to check if we're in a CUDA-enabled (NVIDIA) environment.
+# vLLM will fail to import if CUDA is not available.
+try:
+    from vllm import LLM, SamplingParams
+    from vllm.multimodal import ImagePixelData  # noqa: F401
+
+    VLLM_AVAILABLE = True
+except ImportError:
+    VLLM_AVAILABLE = False
+    print(
+        "⚠️ vLLM not found. Falling back to standard Transformers pipeline. This will be slower."
+    )
+    import torch
+    from transformers import AutoProcessor, Idefics2ForConditionalGeneration
+    from peft import PeftModel
 
 
-# --- Pydantic Models for API ---
+# --- Pydantic Models & Global State ---
 class InferenceRequest(BaseModel):
     image_base64: str
     prompt: str
@@ -17,37 +35,56 @@ class InferenceResponse(BaseModel):
     generated_text: str
 
 
-# --- Global variable for the model ---
-llm: LLM | None = None
+# Global variable for the model
+model: LLM | Idefics2ForConditionalGeneration | None = None
+processor: AutoProcessor | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Handles the startup and shutdown of the model.
-    On startup, it loads the specified model from the Hugging Face Hub.
-    """
-    global llm
-
-    # CRITICAL: We point this to the pre-trained SmolOperator model on the Hub.
-    # A user could override this with an environment variable to use their own model.
+    global model, processor
     model_id = os.environ.get(
         "MODEL_ID", "smolagents/SmolVLM2-2.2B-Instruct-Agentic-GUI"
     )
-    print(f"🚀 Loading model '{model_id}' for inference using vLLM...")
+    print(f"🚀 Loading model '{model_id}' for inference...")
 
-    # vLLM is the industry standard for high-performance inference.
-    llm = LLM(
-        model=model_id,
-        tensor_parallel_size=1,
-        trust_remote_code=True,  # SmolLM requires this
-        gpu_memory_utilization=0.90,
-    )
-    print(f"✅ Model '{model_id}' loaded and ready for inference.")
+    if VLLM_AVAILABLE:
+        print("✅ vLLM is available. Using high-performance engine.")
+        model = LLM(
+            model=model_id,
+            tensor_parallel_size=1,
+            trust_remote_code=True,
+            gpu_memory_utilization=0.90,
+        )
+    else:
+        print(
+            "✅ vLLM not available. Using standard Transformers pipeline for Mac/CPU."
+        )
+        device = "mps" if torch.backends.mps.is_available() else "cpu"
+        dtype = torch.float16 if device == "mps" else torch.bfloat16
+
+        processor = AutoProcessor.from_pretrained(model_id)
+
+        # In a real local setup, you might point this to your fine-tuned adapters
+        if os.path.isdir(model_id):  # If MODEL_ID is a local path to adapters
+            base_model_id = os.environ.get(
+                "BASE_MODEL_ID", "HuggingFaceTB/SmolLM-1.7B-32k-instruct"
+            )
+            base_model = Idefics2ForConditionalGeneration.from_pretrained(
+                base_model_id, torch_dtype=dtype
+            )
+            model = PeftModel.from_pretrained(base_model, model_id)
+            model = model.merge_and_unload()
+        else:  # Load directly from Hub
+            model = Idefics2ForConditionalGeneration.from_pretrained(
+                model_id, torch_dtype=dtype, trust_remote_code=True
+            )
+
+        model.to(device)
+
+    print(f"✅ Model '{model_id}' loaded and ready.")
     yield
-    # --- On Shutdown ---
-    print("🔌 Shutting down inference server.")
-    llm = None
+    model, processor = None, None
 
 
 app = FastAPI(title="Churninator Inference Server", lifespan=lifespan)
@@ -55,50 +92,41 @@ app = FastAPI(title="Churninator Inference Server", lifespan=lifespan)
 
 @app.post("/predict", response_model=InferenceResponse)
 async def predict(request: InferenceRequest):
-    """
-    Receives an image and a prompt, runs inference with the loaded VLM,
-    and returns the raw generated text.
-    """
-    if not llm:
-        raise HTTPException(
-            status_code=503, detail="Model is not loaded or is warming up."
-        )
+    if not model:
+        raise HTTPException(status_code=503, detail="Model is not loaded.")
 
-    try:
-        # 1. Decode the image from base64
-        # vLLM's multimodal support expects a PIL Image.
-        from PIL import Image
-        from io import BytesIO
+    image = Image.open(BytesIO(base64.b64decode(request.image_base64)))
+    prompt_text = f"<|user|>\n{request.prompt}<|end|>\n<|assistant|>"
 
-        image_bytes = base64.b64decode(request.image_base64)
-        image = Image.open(BytesIO(image_bytes))
-
-        # 2. Format the prompt using the model's chat template
-        # The SmolLM model uses the Llama 3 Instruct template.
-        prompt_text = f"<|user|>\n{request.prompt}<|end|>\n<|assistant|>"
-
-        # 3. Configure sampling parameters for deterministic output
-        sampling_params = SamplingParams(
-            temperature=0.0,  # Set to 0 for deterministic, predictable actions
-            max_tokens=256,  # Increase max tokens to allow for longer thoughts
-        )
-
-        # 4. Run inference using vLLM
-        # The `llm.generate` method handles batching requests for high throughput.
-        # For multimodal, we pass the image via the `multi_modal_data` argument.
-        outputs = await llm.generate(
+    if VLLM_AVAILABLE:
+        sampling_params = SamplingParams(temperature=0.0, max_tokens=256)
+        outputs = await model.generate(
             prompts=prompt_text,
             sampling_params=sampling_params,
             multi_modal_data={"image": image},
         )
-
-        # Extract the generated text from the first (and only) output
         generated_text = outputs[0].outputs[0].text
+    else:
+        # Standard Transformers pipeline for Mac/CPU
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image"},
+                    {"type": "text", "text": request.prompt},
+                ],
+            }
+        ]
 
-        return InferenceResponse(generated_text=generated_text)
+        if not model or not processor:
+            raise HTTPException(
+                status_code=503, detail="Model or processor is not loaded."
+            )
 
-    except Exception as e:
-        print(f"❌ Inference Error: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"An error occurred during inference: {e}"
-        )
+        inputs = processor(messages, image=image, return_tensors="pt").to(model.device)
+        generated_ids = model.generate(**inputs, max_new_tokens=256)
+        generated_text = processor.batch_decode(
+            generated_ids, skip_special_tokens=True
+        )[0]
+
+    return InferenceResponse(generated_text=generated_text)

@@ -33,8 +33,8 @@ services:
 
   backend_api:
     build:
-      context: ./backend
-      dockerfile: Dockerfile.api # Assumes you've created this Dockerfile
+      context: .
+      dockerfile: docker/Dockerfile.api # Assumes you've created this Dockerfile
     container_name: churninator_api
     depends_on:
       postgres_db:
@@ -52,8 +52,8 @@ services:
 
   inference_server:
     build:
-      context: ./
-      dockerfile: backend/inference/Dockerfile.inference # Assumes you've created this
+      context: .
+      dockerfile: docker/Dockerfile.inference.mac # Assumes you've created this
     container_name: churninator_inference
     platform: linux/amd64
     volumes:
@@ -76,7 +76,7 @@ services:
   worker:
     build:
       context: .
-      dockerfile: backend/worker/Dockerfile.worker # Assumes you've created this
+      dockerfile: docker/Dockerfile.worker # Assumes you've created this
     container_name: churninator_worker
     platform: linux/amd64
     depends_on:
@@ -96,8 +96,8 @@ services:
 
   frontend:
     build:
-      context: ./web # Assuming your frontend is in a 'web' directory
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/Dockerfile.frontend # Assuming your frontend is in a 'web' directory
     container_name: churninator_frontend
     depends_on:
       - backend_api

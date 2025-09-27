@@ -10,3 +10,17 @@ dependencies = [
     "uvicorn>=0.37.0",
     "vllm>=0.10.2",
 ]
+
+[project.optional-dependencies]
+# Dependencies for running on NVIDIA GPUs in production
+nvidia = [
+    "vllm",
+    "torch"
+]
+
+# Dependencies for running on Apple Silicon (M-series) Mac
+mac = [
+    # vLLM does not support MPS. We will use the standard transformers library for local inference.
+    "torch",
+    "accelerate"
+]

@@ -1,0 +1,54 @@
+# docker/Dockerfile.frontend (Corrected & Final)
+
+# ==============================================================================
+# STAGE 1: Build Dependencies
+# ==============================================================================
+FROM node:20-alpine AS deps
+WORKDIR /app
+
+# Copy ONLY the package manager files from the correct location.
+# This leverages Docker's layer cache.
+COPY web/package.json web/package-lock.json* ./
+
+# Install dependencies.
+RUN npm ci
+
+# ==============================================================================
+# STAGE 2: Build the Application
+# ==============================================================================
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Copy dependencies from the 'deps' stage.
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy the rest of the frontend source code from the 'web' directory.
+COPY ./web .
+
+# Build the Next.js application.
+RUN npm run build
+
+# ==============================================================================
+# STAGE 3: Production Runner
+# ==============================================================================
+# Start fresh with a minimal Node.js image for the final product.
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+# Create a non-root user for better security.
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy the production-ready build artifacts from the 'builder' stage.
+# This includes the standalone server, public assets, and static files.
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# The user is now the non-root user.
+USER nextjs
+
+EXPOSE 3000
+ENV PORT 3000
+# The standalone server is the recommended way to run Next.js in Docker.
+CMD ["node", "server.js"]

@@ -1,0 +1,35 @@
+# This Dockerfile is ONLY for local development on Apple Silicon Macs.
+
+# Start from a standard Python image compatible with ARM64 architecture.
+FROM python:3.13-slim-bookworm
+
+# --- System Dependencies & Setup ---
+WORKDIR /app
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# --- Install UV and Python Dependencies ---
+RUN pip install uv
+COPY ./backend/inference/pyproject.toml /app/pyproject.toml
+COPY ./uv.lock* /app/
+
+RUN uv venv
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+
+# THE MAGIC: Install dependencies WITH the 'mac' extra.
+# This will install `torch` and `accelerate` for MPS.
+RUN uv pip install '.[mac]' -f https://download.pytorch.org/whl/cpu
+
+# --- Copy Code & Perform Install ---
+ENV PYTHONPATH=/app
+COPY ./setup.py .
+COPY ./forge/utils /app/forge/utils
+COPY ./backend/src /app/src
+
+RUN uv pip install -e .
+
+# --- Final Configuration ---
+RUN mkdir -p /app/models
+EXPOSE 8001
+CMD ["uvicorn", "src.inference.server:app", "--host", "0.0.0.0", "--port", "8001"]

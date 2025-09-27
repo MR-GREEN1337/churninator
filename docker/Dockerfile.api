@@ -1,0 +1,33 @@
+FROM python:3.13-slim-bookworm
+
+WORKDIR /app
+
+# Install System Dependencies & UV
+RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev gcc curl && apt-get clean && rm -rf /var/lib/apt/lists/*
+ADD https://astral.sh/uv/install.sh /uv-installer.sh
+RUN sh /uv-installer.sh && rm /uv-installer.sh
+ENV PATH="/root/.local/bin:${PATH}"
+
+# Create and activate venv
+RUN uv venv
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Copy dependency files FROM THE CORRECT LOCATION
+COPY ./backend/pyproject.toml /app/pyproject.toml
+COPY ./uv.lock* /app/
+
+# Install dependencies
+RUN uv sync --locked || uv sync
+
+# Copy all necessary source code
+COPY ./setup.py /app/
+COPY ./forge/utils /app/forge/utils
+COPY ./backend/src /app/src
+
+# Perform editable install
+RUN uv pip install -e .
+
+# Expose port and run the app
+EXPOSE 8000
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

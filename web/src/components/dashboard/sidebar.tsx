@@ -304,7 +304,7 @@ export function Sidebar({
     <aside
       className={cn(
         "hidden md:flex flex-col border-r bg-background transition-all duration-300 ease-in-out",
-        isCollapsed ? "w-20" : "w-72",
+        isCollapsed ? "w-14" : "w-60",
       )}
     >
       <div
@@ -326,7 +326,7 @@ export function Sidebar({
                   size={isCollapsed ? "icon" : "default"}
                 >
                   <Link href="/dashboard">
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-full w-full" />
                     {!isCollapsed && (
                       <span className="ml-2">New Agent Run</span>
                     )}
