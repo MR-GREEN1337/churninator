@@ -1,47 +1,35 @@
-# backend/inference/Dockerfile.inference (Corrected & Final)
+# docker/Dockerfile.worker
+FROM python:3.13-slim-bookworm
 
-# ==============================================================================
-# The Churninator - High-Performance Inference Server (vLLM Edition)
-# ==============================================================================
-# vLLM provides official Docker images with all CUDA dependencies pre-installed.
-FROM vllm/vllm-openai:latest
-
-# --- Stage 1: Setup & WORKDIR ---
 WORKDIR /app
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    VIRTUAL_ENV=/app/.venv \
+    PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH=/app \
+    PLAYWRIGHT_BROWSERS_PATH=/pw_browsers \
+    DEBIAN_FRONTEND=noninteractive
 
-# --- Stage 2: Install UV and Dependencies ---
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xvfb curl git \
+    libnss3 libnspr4 libdbus-1-3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+    libatspi2.0-0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 \
+    libxkbcommon0 libpango-1.0-0 libcairo2 libasound2 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 RUN pip install uv
 
-# Copy the specific dependency files from the monorepo root into the WORKDIR
-COPY ./backend/inference/pyproject.toml /app/pyproject.toml
-COPY ./uv.lock* /app/
+COPY backend/worker/pyproject.toml ./
+RUN uv venv && uv sync
 
-# Use uv to install our app's dependencies.
-RUN uv sync --locked --no-dev || uv sync --no-dev
+COPY setup.py .
+COPY backend/src ./backend/src
+COPY forge/utils ./forge/utils
 
-# --- Stage 3: Copy Code & Perform Install ---
-# Set the PYTHONPATH so the server can import from 'forge' and 'src'
-ENV PYTHONPATH=/app
-
-# Copy the setup file from the monorepo root
-COPY ./setup.py /app/setup.py
-
-# Copy all relevant source code directories needed for inference
-COPY ./forge/utils /app/forge/utils
-COPY ./backend/src /app/src
-
-# Perform an "editable" install of our project. This makes modules like
-# `forge.utils.function_parser` importable by the server.
 RUN uv pip install -e .
+RUN playwright install --with-deps chromium
 
-# --- Stage 4: Final Configuration ---
-# Create the directory for mounting models.
-RUN mkdir -p /app/models
+COPY backend/worker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-# Expose the API port.
-EXPOSE 8001
-
-# Run the inference server using uvicorn.
-CMD ["uvicorn", "src.inference.server:app", "--host", "0.0.0.0", "--port", "8001"]
+ENTRYPOINT ["/entrypoint.sh"]

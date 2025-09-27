@@ -36,8 +36,8 @@ class InferenceResponse(BaseModel):
 
 
 # Global variable for the model
-model: LLM | Idefics2ForConditionalGeneration | None = None
-processor: AutoProcessor | None = None
+model = None
+processor = None
 
 
 @asynccontextmanager

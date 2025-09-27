@@ -2,11 +2,11 @@
 # from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.core.settings import get_settings
+from backend.src.core.settings import get_settings
 # from src.db.postgresql import engine
 
 # Ensure Dramatiq tasks are discovered by importing them
-from src.api import router as api_router
+from backend.src.api import router as api_router
 
 """
 @asynccontextmanager

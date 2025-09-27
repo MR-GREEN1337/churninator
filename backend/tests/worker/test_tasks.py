@@ -2,8 +2,8 @@
 import pytest
 from unittest.mock import AsyncMock
 
-from src.worker import tasks
-from src.services.vlm.base import VLMResponse
+from backend.src.worker import tasks
+from backend.src.services.vlm.base import VLMResponse
 
 pytestmark = pytest.mark.asyncio
 

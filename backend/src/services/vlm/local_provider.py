@@ -1,7 +1,7 @@
 # backend/src/services/vlm/local_provider.py
 import httpx
 from .base import VLMProvider, VLMResponse, VLMResponseParser
-from src.core.settings import get_settings
+from backend.src.core.settings import get_settings
 
 
 class LocalVLMProvider(VLMProvider):

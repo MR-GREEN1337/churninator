@@ -1,20 +1,21 @@
-# docker/Dockerfile.inference.nvidia (Corrected)
+# docker/Dockerfile.inference.nvidia
 FROM vllm/vllm-openai:latest
 
 WORKDIR /app
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
+
 RUN pip install uv
 
-# Copy dependency files FROM THE CORRECT LOCATION
-COPY ./backend/inference/pyproject.toml /app/pyproject.toml
-COPY ./uv.lock* /app/
-RUN uv sync --locked || uv sync
+COPY backend/inference/pyproject.toml ./
+RUN uv sync
 
-ENV PYTHONPATH=/app
-COPY ./setup.py .
-COPY ./forge/utils /app/forge/utils
-COPY ./backend/src /app/src
+COPY setup.py .
+COPY backend/src ./backend/src
+COPY forge/utils ./forge/utils
+
 RUN uv pip install -e .
 
 RUN mkdir -p /app/models
 EXPOSE 8001
-CMD ["uvicorn", "src.inference.server:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "backend.inference.server:app", "--host", "0.0.0.0", "--port", "8001"]

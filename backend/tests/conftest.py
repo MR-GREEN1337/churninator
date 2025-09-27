@@ -12,11 +12,11 @@ from sqlmodel import SQLModel
 import dramatiq
 from dramatiq.brokers.stub import StubBroker
 
-from src.main import app
-from src.core.settings import get_settings
-from src.db.postgresql import get_session
-from src.db.models.user import User, UserCreate
-from src.core.security import get_password_hash
+from backend.src.main import app
+from backend.src.core.settings import get_settings
+from backend.src.db.postgresql import get_session
+from backend.src.db.models.user import User, UserCreate
+from backend.src.core.security import get_password_hash
 
 
 # --- Broker Mocking ---

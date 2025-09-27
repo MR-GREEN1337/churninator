@@ -1,4 +1,3 @@
-# backend/src/worker/tasks.py
 import dramatiq
 import asyncio
 import redis.asyncio as redis
@@ -8,11 +7,11 @@ from playwright.async_api import async_playwright, Page
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from worker.broker import redis_broker
-from src.core.settings import get_settings
-from src.db.postgresql import postgres_db  # Import the database instance
-from src.db.models.agent_run import AgentRun
-from src.services.vlm.factory import vlm_provider  # The VLM "brain"
+from backend.worker.broker import redis_broker
+from backend.src.core.settings import get_settings
+from backend.src.db.postgresql import postgres_db  # Import the database instance
+from backend.src.db.models.agent_run import AgentRun
+from backend.src.services.vlm.factory import vlm_provider  # The VLM "brain"
 from forge.utils.function_parser import parse_function_call
 
 settings = get_settings()

@@ -8,7 +8,7 @@ from sqlmodel import SQLModel
 from urllib.parse import urlparse, parse_qs
 from loguru import logger
 import ssl
-from src.core.settings import get_settings
+from backend.src.core.settings import get_settings
 
 settings = get_settings()
 

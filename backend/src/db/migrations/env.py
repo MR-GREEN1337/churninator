@@ -9,8 +9,8 @@ from alembic import context
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.core.settings import get_settings
-from src.db.models import *  # noqa: F403 Import all models to register them with SQLModel metadata
+from backend.src.core.settings import get_settings
+from backend.src.db.models import *  # noqa: F403 Import all models to register them with SQLModel metadata
 from sqlmodel import SQLModel
 
 settings = get_settings()

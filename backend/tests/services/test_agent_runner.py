@@ -3,9 +3,9 @@ import pytest
 from sqlmodel.ext.asyncio.session import AsyncSession
 from dramatiq.brokers.stub import StubBroker
 
-from src.services import agent_runner
-from src.db.models.user import User
-from src.db.models.agent_run import AgentRunCreate
+from backend.src.services import agent_runner
+from backend.src.db.models.user import User
+from backend.src.db.models.agent_run import AgentRunCreate
 
 pytestmark = pytest.mark.asyncio
 

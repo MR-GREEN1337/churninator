@@ -1,5 +1,5 @@
 # backend/src/services/vlm/factory.py
-from src.core.settings import get_settings
+from backend.src.core.settings import get_settings
 from .base import VLMProvider
 from .local_provider import LocalVLMProvider
 from .openai_provider import OpenAIVLMProvider

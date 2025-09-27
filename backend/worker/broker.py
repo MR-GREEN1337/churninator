@@ -1,6 +1,6 @@
 import dramatiq
 from dramatiq.brokers.redis import RedisBroker
-from src.core.settings import get_settings
+from backend.src.core.settings import get_settings
 
 # Configure the Redis broker
 redis_broker = RedisBroker(

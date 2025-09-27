@@ -1,0 +1,36 @@
+# Makefile.local - For Dockerless Development on macOS
+
+# Ensure the virtual environment is activated for all commands
+SHELL := /bin/bash
+PATH := $(CURDIR)/.venv/bin:$(PATH)
+PYTHONPATH := $(CURDIR)
+export PATH PYTHONPATH
+
+.PHONY: help setup run
+
+help: ## ✨ Show this help message for local development
+	@echo "Usage: make -f Makefile.local [target]"
+	@echo "----------------------------------------"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+
+setup: ## 🛠️  Run the one-time setup for all services.
+	@echo "--- Setting up Python Virtual Environment ---"
+	python3.13 -m venv .venv
+	source .venv/bin/activate && \
+	echo "--- Installing all Python dependencies ---" && \
+	uv pip install honcho && \
+	uv pip install -e ./backend -e ./backend/worker -e ./backend/inference && \
+	echo "--- Installing Playwright browser ---" && \
+	playwright install --with-deps chromium && \
+	echo "--- Installing frontend dependencies ---" && \
+	(cd web && npm install)
+	@echo "✅ Setup complete! You can now run 'make -f Makefile.local run'"
+
+run: ## 🚀 Start all services locally using honcho.
+	@echo "🚀 Starting all Churninator services..."
+	@echo "   - API Server on http://localhost:8000"
+	@echo "   - Inference Server on http://localhost:8001"
+	@echo "   - Frontend on http://localhost:3000"
+	@echo "   - Worker listening for tasks..."
+	@echo "--- Press Ctrl+C to stop all services ---"
+	honcho -f Procfile.local start

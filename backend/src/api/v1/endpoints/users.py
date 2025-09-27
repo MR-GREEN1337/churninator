@@ -3,9 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.db.postgresql import get_session
-from src.db.models.user import User, UserCreate, UserRead
-from src.core.security import get_password_hash
+from backend.src.db.postgresql import get_session
+from backend.src.db.models.user import User, UserCreate, UserRead
+from backend.src.core.security import get_password_hash
 
 router = APIRouter()
 

@@ -1,35 +1,42 @@
-# This Dockerfile is ONLY for local development on Apple Silicon Macs.
+# docker/Dockerfile.inference.mac (Corrected & Final)
 
-# Start from a standard Python image compatible with ARM64 architecture.
 FROM python:3.13-slim-bookworm
 
-# --- System Dependencies & Setup ---
 WORKDIR /app
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    # We create the venv here and add it to the path immediately
+    VIRTUAL_ENV=/app/.venv \
+    PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH=/app
 
-# --- Install UV and Python Dependencies ---
+# --- Install UV and Create Environment ---
 RUN pip install uv
-COPY ./backend/inference/pyproject.toml /app/pyproject.toml
-COPY ./uv.lock* /app/
-
 RUN uv venv
-ENV VIRTUAL_ENV=/app/.venv
-ENV PATH="/app/.venv/bin:$PATH"
 
-# THE MAGIC: Install dependencies WITH the 'mac' extra.
-# This will install `torch` and `accelerate` for MPS.
-RUN uv pip install '.[mac]' -f https://download.pytorch.org/whl/cpu
+# --- Install Dependencies ---
+# We install dependencies first, without any source code present.
+# This makes the build more cacheable and robust.
+RUN uv pip install \
+    "fastapi" \
+    "uvicorn[standard]" \
+    "pydantic" \
+    "Pillow" \
+    "transformers" \
+    "torch" \
+    "accelerate" \
+    "peft" \
+    --find-links https://download.pytorch.org/whl/cpu
 
-# --- Copy Code & Perform Install ---
-ENV PYTHONPATH=/app
+# --- Copy and Install Project Code ---
 COPY ./setup.py .
 COPY ./forge/utils /app/forge/utils
-COPY ./backend/src /app/src
+COPY ./backend/src /app/backend/src
 
+# Now that dependencies are installed, we install our own code.
 RUN uv pip install -e .
 
 # --- Final Configuration ---
 RUN mkdir -p /app/models
 EXPOSE 8001
-CMD ["uvicorn", "src.inference.server:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "backend.inference.server:app", "--host", "0.0.0.0", "--port", "8001"]

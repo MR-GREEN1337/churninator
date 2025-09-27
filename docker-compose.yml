@@ -1,11 +1,16 @@
-services:
-  # -------------------------------------------------------------------------- #
-  #                                 BACKEND SERVICES                           #
-  # -------------------------------------------------------------------------- #
+# ==============================================================================
+# Docker Compose for LOCAL DEVELOPMENT (Mac / non-NVIDIA)
+# ==============================================================================
+# This is the default configuration, managed by the Makefile.
+# It uses the Mac-compatible inference server and mounts local code for hot-reloading.
+# ==============================================================================
 
-  postgres_db:
+services:
+  # --- CORE INFRASTRUCTURE ---
+  db:
     image: postgres:17-alpine
-    container_name: churninator_postgres
+    platform: linux/arm64
+    container_name: churninator_db_dev
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
@@ -16,102 +21,98 @@ services:
       - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
 
-  redis_queue:
-    image: redis:7-alpine
-    container_name: churninator_redis
+  redis:
+    image: redis:8-alpine
+    platform: linux/arm64
+    container_name: churninator_redis_dev
     ports:
       - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
 
-  backend_api:
+  # --- APPLICATION SERVICES ---
+  api:
     build:
       context: .
-      dockerfile: docker/Dockerfile.api # Assumes you've created this Dockerfile
-    container_name: churninator_api
+      dockerfile: docker/Dockerfile.api
+    platform: linux/arm64
+    container_name: churninator_api_dev
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app
     depends_on:
-      postgres_db:
-        condition: service_healthy
-      redis_queue:
-        condition: service_healthy
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
     ports:
       - "8000:8000"
     volumes:
-      # Mount the source code for hot-reloading during development
-      - ./backend/src:/app/src
+      - ./backend:/app
+    environment:
+      - PYTHONPATH=/app
     env_file:
       - .env
-    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
-
-  inference_server:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.inference.mac # Assumes you've created this
-    container_name: churninator_inference
-    platform: linux/amd64
-    volumes:
-      # Mount your fine-tuned models from the forge into the container
-      - ./forge/checkpoints:/app/models
-    environment:
-      # Point to your BEST fine-tuned model by default
-      - MODEL_ID=/app/models/churninator-smollm-1.7b-reasoning-v1/final
-    ports:
-      - "8001:8001"
-    # This is the key for GPU access with Docker Compose
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all # Use all available GPUs
-              capabilities: [gpu]
 
   worker:
     build:
       context: .
-      dockerfile: docker/Dockerfile.worker # Assumes you've created this
-    container_name: churninator_worker
-    platform: linux/amd64
+      dockerfile: docker/Dockerfile.worker
+    platform: linux/arm64
+    container_name: churninator_worker_dev
     depends_on:
-      - redis_queue
+      - redis
       - inference_server
     volumes:
-      # Mount source code for easy development
-      - ./backend/src:/app/src
-      - ./forge/utils:/app/forge/utils # The worker needs the function_parser
+      - ./backend:/app/
+      - ./forge/utils:/app/forge/utils
+      - playwright_browsers:/pw_browsers
     env_file:
       - .env
-    # We don't run the entrypoint directly, as it's defined in the Dockerfile
+    environment:
+      - PYTHONPATH=/app
 
-  # -------------------------------------------------------------------------- #
-  #                                 FRONTEND SERVICE                           #
-  # -------------------------------------------------------------------------- #
-
-  frontend:
+  inference_server:
     build:
       context: .
-      dockerfile: docker/Dockerfile.frontend # Assuming your frontend is in a 'web' directory
-    container_name: churninator_frontend
-    depends_on:
-      - backend_api
+      dockerfile: docker/Dockerfile.inference.mac # <-- Uses the Mac-specific Dockerfile
+    platform: linux/arm64
+    container_name: churninator_inference_dev
+    # NO 'deploy' KEY. This is the critical difference.
     ports:
-      - "3000:3000"
+      - "8001:8001"
     volumes:
-      # Hot-reloading for the frontend
-      - ./web:/app
-      - /app/node_modules # Use the node_modules from within the container
-      - /app/.next
+      - ./backend:/app/backend
+      - ./forge/checkpoints:/app/models # Mount local checkpoints for testing
+    env_file:
+      - .env
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - PYTHONPATH=/app
 
-# --- Named Volumes ---
-# This ensures your Postgres data persists even if you stop and remove containers
+  frontend:
+      build:
+        context: .
+        dockerfile: docker/Dockerfile.frontend
+      platform: linux/arm64
+      container_name: churninator_frontend_dev
+      # Add the command to run the Next.js development server
+      command: sh -c "npm install && npm run dev"
+      depends_on:
+        - api
+      ports:
+        - "3000:3000"
+      volumes:
+        - ./web:/app
+        - /app/node_modules
+        - /app/.next
+      environment:
+        - NODE_ENV=development # Change to development
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
+
+# --- NAMED VOLUMES ---
 volumes:
   postgres_data:
+  playwright_browsers:

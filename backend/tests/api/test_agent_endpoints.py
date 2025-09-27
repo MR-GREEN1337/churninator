@@ -4,8 +4,8 @@ from httpx import AsyncClient
 from sqlmodel.ext.asyncio.session import AsyncSession
 from dramatiq.brokers.stub import StubBroker
 
-from src.db.models.user import User
-from src.db.models.agent_run import AgentRun
+from backend.src.db.models.user import User
+from backend.src.db.models.agent_run import AgentRun
 
 pytestmark = pytest.mark.asyncio
 

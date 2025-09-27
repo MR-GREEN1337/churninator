@@ -10,4 +10,4 @@ sleep 2
 
 echo "[2/2] Launching Dramatiq worker..."
 # Use `uv run` to execute the command within the virtual environment
-exec uv run dramatiq -p 4 -t 4 src.worker.tasks
+exec uv run dramatiq -p 4 -t 4 worker.broker worker.tasks

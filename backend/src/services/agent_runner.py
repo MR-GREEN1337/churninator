@@ -3,10 +3,10 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
 import uuid  # Import uuid
 
-from src.worker.tasks import run_churninator_agent
-from src.db.models.agent_run import AgentRun, AgentRunCreate
-from src.db.models.user import User
-from src.utils.favicon import (
+from backend.worker.tasks import run_churninator_agent
+from backend.src.db.models.agent_run import AgentRun, AgentRunCreate
+from backend.src.db.models.user import User
+from backend.src.utils.favicon import (
     get_domain_from_url,
     get_favicon_url,
 )

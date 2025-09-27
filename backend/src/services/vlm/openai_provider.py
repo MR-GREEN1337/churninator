@@ -1,7 +1,7 @@
 # backend/src/services/vlm/openai_provider.py
 from openai import AsyncOpenAI, OpenAIError
 from .base import VLMProvider, VLMResponse, VLMResponseParser
-from src.core.settings import get_settings
+from backend.src.core.settings import get_settings
 
 
 class OpenAIVLMProvider(VLMProvider):
