@@ -138,3 +138,6 @@ db-downgrade: ## ↩️ Downgrade the database by one revision
 
 db-shell: ## 📦 Open a psql shell to the running database
 	docker-compose exec db psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
+
+stop: ## 🛑 Stop all services
+	docker-compose down

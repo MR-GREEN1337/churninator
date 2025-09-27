@@ -164,7 +164,7 @@ async function HeroHeader() {
           <Link href="#">Join Discord</Link>
         </Button>
         <UserButton />
-        <ThemeToggle />
+        <ThemeToggle isCollapsed />
       </HeaderClient>
     </header>
   );

@@ -12,6 +12,8 @@ class AgentRunBase(SQLModel):
     target_url: str
     task_prompt: str
 
+    favicon_url: Optional[str] = Field(default=None)
+
 
 class AgentRun(AgentRunBase, table=True):  # type: ignore[call-arg]
     id: Optional[uuid.UUID] = Field(default_factory=uuid.uuid4, primary_key=True)

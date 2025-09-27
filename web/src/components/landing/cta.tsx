@@ -1,3 +1,4 @@
+// web/src/components/landing/cta.tsx
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -15,6 +16,7 @@ export function Cta() {
             aria-hidden
             className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 opacity-20 dark:opacity-10"
           >
+            {/* You can keep or change this SVG decoration */}
             <svg
               viewBox="0 0 40 40"
               fill="none"
@@ -38,15 +40,16 @@ export function Cta() {
             </svg>
           </div>
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Ready to master your next conversation?
+            Find your competitor's fatal flaw.
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Stop leaving your success to chance. Start training with Recast
-            today and turn insight into instinct.
+            Stop guessing and start knowing. Deploy your first agent in the next
+            five minutes and uncover the insights that give you an unfair
+            advantage.
           </p>
           <Button asChild size="lg" className="mt-8 group">
-            <Link href="/signup">
-              Get Started Now
+            <Link href="/dashboard">
+              Launch Your First Agent
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </Button>

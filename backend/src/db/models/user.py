@@ -17,6 +17,9 @@ class User(UserBase, table=True):  # type: ignore[call-arg]
     hashed_password: str
     created_at: dt.datetime = Field(default_factory=dt.datetime.utcnow)
 
+    # Useful for analytics, usage-based billing, or feature flagging.
+    run_count: int = Field(default=0, nullable=False)
+
     # Back-relationship to agent runs
     runs: List["AgentRun"] = Relationship(back_populates="owner")
 

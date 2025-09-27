@@ -1,3 +1,4 @@
+// web/src/components/landing/faq.tsx
 import {
   Accordion,
   AccordionContent,
@@ -5,31 +6,33 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+// --- ADAPTED FAQs FOR CHURNINATOR ---
 const faqs = [
   {
-    question: "Is my conversation data private and secure?",
+    question: "Is this legal and will my agents get blocked?",
     answer:
-      "Absolutely. Privacy is at the core of Recast. Your data is encrypted, processed securely, and is never used for training our models. We delete your transcripts after analysis is complete. Your conversations are yours alone.",
+      "Churninator is a powerful reconnaissance tool. It uses advanced techniques to mimic human behavior, running from standard residential IP addresses to minimize detection. While no automated system is 100% undetectable, it is significantly more robust than traditional scrapers. We recommend using the tool responsibly and in accordance with the terms of service of the sites you analyze.",
   },
   {
-    question: "What kind of conversations can I analyze?",
+    question: "What kind of websites can the agent analyze?",
     answer:
-      "Recast is designed for a wide range of high-stakes conversations. This includes sales calls, job interviews, team meetings, public speaking practice, and even personal discussions. If it's a conversation you want to improve, you can analyze it with Recast.",
+      "The agent is built on Playwright and powered by a Vision-Language Model, allowing it to navigate any modern web application, including those built with React, Vue, Svelte, and other JavaScript frameworks. It's designed to handle complex, dynamic user interfaces just like a human would.",
   },
   {
-    question: "How does the AI Sparring Ring work?",
+    question: "How does the AI actually identify 'friction'?",
     answer:
-      "The Sparring Ring uses a custom AI persona that you choose (like a skeptical investor or an angry customer). It engages in a real-time, text-based conversation with you, adapting to your responses to provide a realistic and challenging practice environment. It's a safe space to build muscle memory for difficult conversations.",
+      "Our fine-tuned AGUVIS-style model is trained not just to complete tasks, but to generate an 'inner monologue' about its process. It identifies friction by reasoning about its own actions. The final report highlights moments of confusion, repeated actions, deviations from an optimal path, and long pauses, providing a qualitative map of the user's struggle.",
   },
   {
-    question: "Can I cancel my subscription at any time?",
+    question: "Can I run the agent on my own infrastructure?",
     answer:
-      "Yes. You can cancel your subscription at any time from your billing settings. Your plan will remain active until the end of the current billing period, and you won't be charged again.",
+      "Yes. The entire Churninator Forge and backend is open-source. Our Enterprise plan includes support for deploying the entire platform, including the fine-tuned inference models, into your own cloud environment for maximum security and control.",
   },
   {
-    question: "Do you offer plans for teams or businesses?",
+    question:
+      "How is this different from a normal analytics tool like Hotjar or FullStory?",
     answer:
-      "Yes, we do. Our Teams plan includes everything in Pro, plus features like centralized billing, team performance dashboards, and custom onboarding. Please contact our sales team for custom pricing and a demo.",
+      "Analytics tools are fantastic for understanding what users are doing on YOUR OWN site. Churninator is designed to give you that same level of insight for ANY OTHER site on the internet, especially your competitors. It's a competitive intelligence tool, not an internal analytics platform.",
   },
 ];
 
@@ -42,18 +45,17 @@ export function Faq() {
             Frequently Asked Questions
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Have questions? We have answers. If you can't find what you're
-            looking for, feel free to contact us.
+            Everything you need to know before you unleash the agent.
           </p>
         </div>
         <div className="mt-12">
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((faq, index) => (
               <AccordionItem value={`item-${index}`} key={index}>
-                <AccordionTrigger className="text-left">
+                <AccordionTrigger className="text-left text-lg">
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-base">
+                <AccordionContent className="text-base text-muted-foreground">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
