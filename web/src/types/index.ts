@@ -1,4 +1,3 @@
-// Mirrors the AgentRunRead Pydantic model
 export interface AgentRun {
   id: string; // uuid.UUID is a string
   target_url: string;
@@ -13,4 +12,7 @@ export interface User {
   id: string;
   email: string;
   is_active: boolean;
+  full_name: string | null;
+  // --- ADDED ---
+  subscription_status?: "active" | "canceled" | "past_due" | null;
 }

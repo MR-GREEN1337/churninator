@@ -1,4 +1,3 @@
-# backend/src/inference/server.py
 import os
 import base64
 from fastapi import FastAPI, HTTPException
@@ -6,26 +5,19 @@ from pydantic import BaseModel
 from contextlib import asynccontextmanager
 from PIL import Image
 from io import BytesIO
+from loguru import logger
+from backend.src.core.settings import get_settings
 
-# --- Environment Detection ---
-# A simple way to check if we're in a CUDA-enabled (NVIDIA) environment.
-# vLLM will fail to import if CUDA is not available.
 try:
-    from vllm import LLM, SamplingParams
-    from vllm.multimodal import ImagePixelData  # noqa: F401
-
-    VLLM_AVAILABLE = True
+    VLLM_AVAILABLE = False
+    raise ImportError
 except ImportError:
     VLLM_AVAILABLE = False
-    print(
-        "⚠️ vLLM not found. Falling back to standard Transformers pipeline. This will be slower."
-    )
+    print("✅ Using standard Transformers pipeline for Mac/CPU.")
     import torch
-    from transformers import AutoProcessor, Idefics2ForConditionalGeneration
-    from peft import PeftModel
+    from transformers import AutoProcessor, AutoModelForImageTextToText
 
 
-# --- Pydantic Models & Global State ---
 class InferenceRequest(BaseModel):
     image_base64: str
     prompt: str
@@ -35,9 +27,9 @@ class InferenceResponse(BaseModel):
     generated_text: str
 
 
-# Global variable for the model
 model = None
 processor = None
+settings = get_settings()
 
 
 @asynccontextmanager
@@ -48,41 +40,16 @@ async def lifespan(app: FastAPI):
     )
     print(f"🚀 Loading model '{model_id}' for inference...")
 
-    if VLLM_AVAILABLE:
-        print("✅ vLLM is available. Using high-performance engine.")
-        model = LLM(
-            model=model_id,
-            tensor_parallel_size=1,
-            trust_remote_code=True,
-            gpu_memory_utilization=0.90,
-        )
-    else:
-        print(
-            "✅ vLLM not available. Using standard Transformers pipeline for Mac/CPU."
-        )
-        device = "mps" if torch.backends.mps.is_available() else "cpu"
-        dtype = torch.float16 if device == "mps" else torch.bfloat16
+    device = "mps" if torch.backends.mps.is_available() else "cpu"
+    dtype = torch.float16 if device == "mps" else torch.bfloat16
 
-        processor = AutoProcessor.from_pretrained(model_id)
+    processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)
+    model = AutoModelForImageTextToText.from_pretrained(
+        model_id, torch_dtype=dtype, trust_remote_code=True
+    )
+    model.to(device)
 
-        # In a real local setup, you might point this to your fine-tuned adapters
-        if os.path.isdir(model_id):  # If MODEL_ID is a local path to adapters
-            base_model_id = os.environ.get(
-                "BASE_MODEL_ID", "HuggingFaceTB/SmolLM-1.7B-32k-instruct"
-            )
-            base_model = Idefics2ForConditionalGeneration.from_pretrained(
-                base_model_id, torch_dtype=dtype
-            )
-            model = PeftModel.from_pretrained(base_model, model_id)
-            model = model.merge_and_unload()
-        else:  # Load directly from Hub
-            model = Idefics2ForConditionalGeneration.from_pretrained(
-                model_id, torch_dtype=dtype, trust_remote_code=True
-            )
-
-        model.to(device)
-
-    print(f"✅ Model '{model_id}' loaded and ready.")
+    print(f"✅ Model '{model_id}' loaded and ready on {device}.")
     yield
     model, processor = None, None
 
@@ -92,41 +59,54 @@ app = FastAPI(title="Churninator Inference Server", lifespan=lifespan)
 
 @app.post("/predict", response_model=InferenceResponse)
 async def predict(request: InferenceRequest):
-    if not model:
-        raise HTTPException(status_code=503, detail="Model is not loaded.")
+    if not model or not processor:
+        raise HTTPException(status_code=503, detail="Model or processor is not loaded.")
 
-    image = Image.open(BytesIO(base64.b64decode(request.image_base64)))
-    prompt_text = f"<|user|>\n{request.prompt}<|end|>\n<|assistant|>"
+    # Decode the base64 image
+    image = Image.open(BytesIO(base64.b64decode(request.image_base64))).convert("RGB")
 
-    if VLLM_AVAILABLE:
-        sampling_params = SamplingParams(temperature=0.0, max_tokens=256)
-        outputs = await model.generate(
-            prompts=prompt_text,
-            sampling_params=sampling_params,
-            multi_modal_data={"image": image},
-        )
-        generated_text = outputs[0].outputs[0].text
-    else:
-        # Standard Transformers pipeline for Mac/CPU
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image"},
-                    {"type": "text", "text": request.prompt},
-                ],
-            }
-        ]
+    # CRITICAL FIX: SmolVLM requires <image> token in the prompt to match the number of images
+    # The model expects the image token to be present in the text
+    prompt_with_image = f"<image>\nUser: {request.prompt}\nAssistant:"
 
-        if not model or not processor:
-            raise HTTPException(
-                status_code=503, detail="Model or processor is not loaded."
+    try:
+        # Process the inputs with the correct format
+        inputs = processor(
+            text=prompt_with_image,
+            images=[image],
+            return_tensors="pt",
+        ).to(model.device)
+
+        # Generate response
+        with torch.no_grad():
+            generated_ids = model.generate(
+                **inputs,
+                max_new_tokens=256,
+                do_sample=False,
+                pad_token_id=processor.tokenizer.eos_token_id,
             )
 
-        inputs = processor(messages, image=image, return_tensors="pt").to(model.device)
-        generated_ids = model.generate(**inputs, max_new_tokens=256)
+        # Decode the response
         generated_text = processor.batch_decode(
             generated_ids, skip_special_tokens=True
         )[0]
 
-    return InferenceResponse(generated_text=generated_text)
+        # Clean the response to only get the assistant's response
+        if "Assistant:" in generated_text:
+            cleaned_text = generated_text.split("Assistant:")[-1].strip()
+        else:
+            # Fallback: remove the original prompt
+            cleaned_text = generated_text.replace(prompt_with_image, "").strip()
+
+        response = InferenceResponse(generated_text=cleaned_text)
+        logger.info(f"Generated response: {response}")
+        return response
+
+    except Exception as e:
+        print(f"Error during inference: {e}")
+        raise HTTPException(status_code=500, detail=f"Inference failed: {str(e)}")
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "model_loaded": model is not None}

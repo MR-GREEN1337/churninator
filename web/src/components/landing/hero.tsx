@@ -129,7 +129,7 @@ export function HeroSection() {
                   {/* Replace this with an image of your Churninator dashboard */}
                   <img
                     className="bg-background aspect-[1200/630] w-full relative rounded-xl"
-                    src="/churninator_dashboard.png"
+                    src="/agent.png"
                     alt="Churninator Application Dashboard"
                     width="1200"
                     height="630"

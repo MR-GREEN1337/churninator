@@ -1,117 +1,134 @@
-# backend/src/api/v1/endpoints/agent.py
-from fastapi import APIRouter, Depends, status, HTTPException
-from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import select, desc  # <-- FIX: Import desc
+import asyncio
 import uuid
 from typing import List
-import asyncio
 
-from backend.src.db.postgresql import get_session
+from fastapi import APIRouter, Depends, status, HTTPException, Request
+from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import select, desc
+from starlette.responses import StreamingResponse, FileResponse, Response
+from pathlib import Path
+
+from backend.src.api.v1.dependencies import get_current_user
+from backend.src.core.settings import get_settings
 from backend.src.db.models.agent_run import AgentRun, AgentRunCreate, AgentRunRead
 from backend.src.db.models.user import User
+from backend.src.db.postgresql import get_session
 from backend.src.services import agent_runner
 
 import redis.asyncio as redis
-from starlette.responses import StreamingResponse
-from backend.src.core.settings import get_settings
 
 router = APIRouter()
+settings = get_settings()
 
 redis_client = redis.Redis(
-    host=get_settings().REDIS_HOST,
-    port=get_settings().REDIS_PORT,
-    auto_close_connection_pool=False,
+    host=settings.REDIS_HOST, port=settings.REDIS_PORT, auto_close_connection_pool=False
 )
-
-
-# MOCK DEPENDENCY
-async def get_current_user_id_mock(
-    db: AsyncSession = Depends(get_session),
-) -> uuid.UUID:
-    user_result = await db.exec(select(User).limit(1))
-    user = user_result.one_or_none()
-    if not user or not user.id:  # Added check for user.id
-        raise HTTPException(
-            status_code=404, detail="No mock user found for authentication."
-        )
-    return user.id
 
 
 @router.post("/runs", status_code=status.HTTP_202_ACCEPTED, response_model=AgentRunRead)
 async def create_agent_run(
     run_in: AgentRunCreate,
     db: AsyncSession = Depends(get_session),
-    owner_id: uuid.UUID = Depends(get_current_user_id_mock),
+    current_user: User = Depends(get_current_user),
 ):
-    """Endpoint to create a new agent run."""
-    run = await agent_runner.queue_agent_run(db=db, run_in=run_in, owner_id=owner_id)
+    if not current_user.id:
+        raise HTTPException(status_code=403, detail="User ID not found")
+    run = await agent_runner.queue_agent_run(
+        db=db, run_in=run_in, owner_id=current_user.id
+    )
     return run
 
 
 @router.get("/runs", response_model=List[AgentRunRead])
 async def get_agent_runs(
     db: AsyncSession = Depends(get_session),
-    owner_id: uuid.UUID = Depends(get_current_user_id_mock),
+    current_user: User = Depends(get_current_user),
 ):
-    """Get all agent runs for the current user."""
-    runs = await db.exec(
+    result = await db.execute(
         select(AgentRun)
-        .where(AgentRun.owner_id == owner_id)
-        # --- FIX for Mypy Error 3 ---
+        .where(AgentRun.owner_id == current_user.id)
         .order_by(desc(AgentRun.created_at))
-        # --- END FIX ---
     )
-    return runs.all()
+    return result.scalars().all()
 
 
 @router.get("/runs/{run_id}", response_model=AgentRunRead)
 async def get_agent_run(
     run_id: uuid.UUID,
     db: AsyncSession = Depends(get_session),
-    owner_id: uuid.UUID = Depends(get_current_user_id_mock),
+    current_user: User = Depends(get_current_user),
 ):
-    """Get a specific agent run by its ID."""
-    run = await db.exec(
-        select(AgentRun).where(AgentRun.id == run_id, AgentRun.owner_id == owner_id)
+    result = await db.execute(
+        select(AgentRun).where(
+            AgentRun.id == run_id, AgentRun.owner_id == current_user.id
+        )
     )
-    db_run = run.one_or_none()
+    db_run = result.scalar_one_or_none()
     if not db_run:
-        raise HTTPException(status_code=404, detail="Agent run not found")
+        raise HTTPException(
+            status_code=404, detail="Agent run not found or access denied"
+        )
     return db_run
 
 
+@router.delete("/runs/{run_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_agent_run(
+    run_id: uuid.UUID,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(AgentRun).where(
+            AgentRun.id == run_id, AgentRun.owner_id == current_user.id
+        )
+    )
+    db_run = result.scalar_one_or_none()
+    if not db_run:
+        raise HTTPException(
+            status_code=404, detail="Agent run not found or access denied"
+        )
+    await db.delete(db_run)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/runs/{run_id}/screenshots/{screenshot_file}")
+async def get_run_screenshot(run_id: uuid.UUID, screenshot_file: str):
+    if ".." in screenshot_file:
+        raise HTTPException(status_code=400, detail="Invalid filename.")
+    file_path = Path(f"storage/runs/{run_id}/{screenshot_file}")
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Screenshot not found.")
+    return FileResponse(str(file_path))
+
+
+# --- START: Robust Streaming Generators ---
 async def frame_generator(run_id: str):
-    """
-    Subscribes to a Redis Pub/Sub channel for a given run_id
-    and yields JPEG frames as they are published by the worker.
-    """
     pubsub = redis_client.pubsub()
     await pubsub.subscribe(f"frames:{run_id}")
-
-    print(f"🎥 Started streaming frames for run_id: {run_id}")
-
+    print(f"🎥 Started MJPEG frame stream for run_id: {run_id}")
     try:
         while True:
-            # Wait for a new message
+            # Use a short timeout to periodically check for new messages
             message = await pubsub.get_message(
-                ignore_subscribe_messages=True, timeout=30
-            )  # 30s timeout
-
+                ignore_subscribe_messages=True, timeout=1.0
+            )
             if message and message["type"] == "message":
                 frame_bytes = message["data"]
-                # Yield the frame in the multipart format required for MJPEG
+                # If the worker sends the special "END" message, we stop.
+                if frame_bytes == b"END":
+                    print(
+                        f"🛑 Received END message. Closing MJPEG stream for run_id: {run_id}."
+                    )
+                    break
                 yield (
                     b"--frame\r\n"
                     b"Content-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n"
                 )
-
-            # If the channel is closed or no message in a while, we can assume the run is over.
-            # A more robust system might check the DB status.
-            if message is None:
-                print(f"🛑 Stopping stream for run_id: {run_id} (timeout).")
-                break
+            # If no message, the loop continues, keeping the connection alive.
+            await asyncio.sleep(0.1)
     except asyncio.CancelledError:
-        print(f"🛑 Stream for run_id: {run_id} cancelled by client.")
+        print(f"🛑 MJPEG stream for run_id: {run_id} cancelled by client.")
     finally:
         await pubsub.unsubscribe(f"frames:{run_id}")
         print(f"🎬 Unsubscribed from frames:{run_id}")
@@ -119,10 +136,41 @@ async def frame_generator(run_id: str):
 
 @router.get("/stream/{run_id}")
 async def stream_agent_view(run_id: str):
-    """
-    This is the MJPEG streaming endpoint. The frontend's <img> tag will
-    point to this URL.
-    """
     return StreamingResponse(
         frame_generator(run_id), media_type="multipart/x-mixed-replace; boundary=frame"
     )
+
+
+async def log_generator(run_id: str, request: Request):
+    pubsub = redis_client.pubsub()
+    await pubsub.subscribe(f"logs:{run_id}")
+    print(f"🎙️ Started SSE log stream for run_id: {run_id}")
+    try:
+        yield "event: connected\ndata: Connection established\n\n"
+        while True:
+            if await request.is_disconnected():
+                print(f"🛑 SSE log stream for run_id: {run_id} disconnected by client.")
+                break
+            message = await pubsub.get_message(
+                ignore_subscribe_messages=True, timeout=1.0
+            )
+            if message and message["type"] == "message":
+                log_data = message["data"].decode("utf-8")
+                yield f"data: {log_data}\n\n"
+            # Keep the loop alive even if there are no new logs
+            await asyncio.sleep(0.1)
+    except asyncio.CancelledError:
+        print(f"🛑 SSE log stream for run_id: {run_id} cancelled by server.")
+    finally:
+        await pubsub.unsubscribe(f"logs:{run_id}")
+        print(f"🎬 Unsubscribed from logs:{run_id}")
+
+
+@router.get("/logs/{run_id}")
+async def stream_agent_logs(run_id: str, request: Request):
+    return StreamingResponse(
+        log_generator(run_id, request), media_type="text/event-stream"
+    )
+
+
+# --- END: Robust Streaming Generators ---

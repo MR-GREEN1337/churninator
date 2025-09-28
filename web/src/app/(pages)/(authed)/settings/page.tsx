@@ -1,7 +1,7 @@
-import React from "react";
+"use client";
+import { redirect } from "next/navigation";
 
-function page() {
-  return <div>page</div>;
+// Redirect from the base /settings route to the first page, /settings/profile
+export default function SettingsPage() {
+  redirect("/settings/profile");
 }
-
-export default page;

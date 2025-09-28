@@ -16,7 +16,6 @@ export function Cta() {
             aria-hidden
             className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 opacity-20 dark:opacity-10"
           >
-            {/* You can keep or change this SVG decoration */}
             <svg
               viewBox="0 0 40 40"
               fill="none"
@@ -39,13 +38,14 @@ export function Cta() {
               />
             </svg>
           </div>
+          {/* --- START TEXT UPDATE --- */}
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Find your competitor's fatal flaw.
+            Gain Your Unfair Advantage.
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Stop guessing and start knowing. Deploy your first agent in the next
-            five minutes and uncover the insights that give you an unfair
-            advantage.
+            Your competitors are losing customers during onboarding. Find out
+            where. Deploy your first agent in the next 2 minutes and get the
+            insights you need to win.
           </p>
           <Button asChild size="lg" className="mt-8 group">
             <Link href="/dashboard">
@@ -53,6 +53,7 @@ export function Cta() {
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </Button>
+          {/* --- END TEXT UPDATE --- */}
         </div>
       </div>
     </section>

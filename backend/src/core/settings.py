@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     POSTGRES_MAX_OVERFLOW: int = 5
     POSTGRES_POOL_TIMEOUT: int = 30
     POSTGRES_POOL_RECYCLE: int = 1800
-    POSTGRES_USE_SSL: bool = True
+    POSTGRES_USE_SSL: bool = False
 
     DATABASE_URL: PostgresDsn
 
@@ -45,12 +45,19 @@ class Settings(BaseSettings):
     REDIS_HOST: str
     REDIS_PORT: int = 6379
 
+    # --- Stripe ---
+    STRIPE_API_KEY: str
+    STRIPE_WEBHOOK_SECRET: str
+    CLIENT_URL: str = "http://localhost:3000"
+
     @property
     def REDIS_URL(self) -> RedisDsn:
         return RedisDsn(f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}")
 
     # --- CORS ---
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]  # For local Next.js dev
+    GOOGLE_API_KEY: str | None = None
+    GOOGLE_MODEL: str = "gemini-2.5-flash-lite"
 
 
 @lru_cache

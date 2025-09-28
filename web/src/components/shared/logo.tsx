@@ -25,8 +25,7 @@ export const Logo: React.FC<LogoProps> = ({ className, hideText = true }) => {
     <Link
       href={
         pathname.startsWith("/dashboard") ||
-        pathname.startsWith("/sparring") ||
-        pathname.startsWith("/replay") ||
+        pathname.startsWith("/history") ||
         pathname.startsWith("/settings")
           ? "/dashboard"
           : "/"

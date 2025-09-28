@@ -4,21 +4,18 @@ import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home,
-  Users,
-  Settings,
-  FileText,
   Search,
   PanelLeft,
   PlusCircle,
   LogOut,
-  CreditCard,
+  Settings,
   LifeBuoy,
   History,
   Wallet,
+  Home,
 } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
 
-// Assuming you have these components. Create placeholders if not.
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -34,23 +31,18 @@ import { Logo } from "@/components/shared/logo";
 import { CommandPalette } from "./CommandPalette";
 import { UserAvatar } from "./UserAvatar";
 import { DynamicBreadcrumb } from "../shared/Breadcrumbs";
+import { cn } from "@/lib/utils";
 
-// --- ADAPTED FOR CHURNINATOR ---
 const mobileNavItems = [
   { href: "/dashboard", icon: Home, label: "Dashboard" },
-  { href: "/dashboard/history", icon: History, label: "Run History" },
-  { href: "/dashboard/settings", icon: Settings, label: "Settings" },
-  { href: "/support", icon: LifeBuoy, label: "Support" }, // Example external link
+  { href: "/history", icon: History, label: "Run History" },
+  { href: "/settings", icon: Settings, label: "Settings" },
+  { href: "/support", icon: LifeBuoy, label: "Support" },
 ];
 
-// Placeholder for an auth hook
-const useAuth = () => ({
-  user: { full_name: "Islam", email: "islam@example.com" },
-  logout: () => alert("Logging out..."),
-});
-
-export function Header() {
-  const { logout, user } = useAuth();
+export function Header({ className }: { className?: string }) {
+  const { data: session } = useSession();
+  const user = session?.user;
   const [isCommandOpen, setCommandOpen] = useState(false);
   const pathname = usePathname();
 
@@ -66,14 +58,24 @@ export function Header() {
   }, []);
 
   const displayName = useMemo(
-    () => user?.full_name || user?.email?.split("@")[0] || "User",
+    () => user?.name || user?.email?.split("@")[0] || "User",
     [user],
   );
 
+  const userAvatarProps = {
+    full_name: user?.name,
+    email: user?.email,
+    image: user?.image,
+  };
+
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-12 items-center justify-between gap-4 border-b bg-background px-4 sm:px-6">
-        {/* --- Left Side: Mobile Nav Trigger & Breadcrumbs --- */}
+      <header
+        className={cn(
+          "sticky top-0 z-30 flex h-12 items-center justify-between gap-4 border-b bg-background px-4 sm:px-6",
+          className,
+        )}
+      >
         <div className="flex items-center gap-4">
           <Sheet>
             <SheetTrigger asChild>
@@ -106,7 +108,6 @@ export function Header() {
           <DynamicBreadcrumb />
         </div>
 
-        {/* --- Right Side: Header Actions --- */}
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -130,7 +131,7 @@ export function Header() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                <UserAvatar user={user} />
+                <UserAvatar user={userAvatarProps} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -147,13 +148,13 @@ export function Header() {
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/settings">
+                  <Link href="/settings">
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/billing">
+                  <Link href="/settings/billing">
                     <Wallet className="mr-2 h-4 w-4" />
                     Billing
                   </Link>
@@ -166,7 +167,10 @@ export function Header() {
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout}>
+              <DropdownMenuItem
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="cursor-pointer"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
               </DropdownMenuItem>

@@ -34,3 +34,11 @@ run: ## 🚀 Start all services locally using honcho.
 	@echo "   - Worker listening for tasks..."
 	@echo "--- Press Ctrl+C to stop all services ---"
 	honcho -f Procfile.local start
+
+stop: ## 🛑 Stop all running Churninator services started by honcho.
+	@echo "🛑 Stopping all Churninator services..."
+	-@pkill -f honcho
+	-@pkill -f uvicorn
+	-@pkill -f node
+	-@pkill -f dramatiq
+	@echo "✅ All services stopped."

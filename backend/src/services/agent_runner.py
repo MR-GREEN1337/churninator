@@ -24,8 +24,8 @@ async def queue_agent_run(
     domain = get_domain_from_url(run_in.target_url)
     favicon_url = get_favicon_url(domain)
 
-    user_result = await db.exec(select(User).where(User.id == owner_id))
-    user = user_result.one_or_none()
+    user_result = await db.execute(select(User).where(User.id == owner_id))
+    user: User = user_result.scalar_one_or_none()
     if not user:
         raise ValueError("User not found")
 

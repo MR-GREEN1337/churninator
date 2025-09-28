@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Sidebar } from "@/components/dashboard/sidebar";
-import { Header } from "@/components/dashboard/header"; // <-- IMPORT THE NEW HEADER
+import { Header } from "@/components/dashboard/header";
 
 export default function DashboardLayout({
   children,
@@ -12,16 +12,24 @@ export default function DashboardLayout({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
   return (
-    <div className="flex h-screen bg-muted/40">
+    // --- START FIX: Convert layout from Flexbox to CSS Grid ---
+    <div className="grid h-screen w-full grid-cols-[auto_1fr] grid-rows-[auto_1fr]">
       <Sidebar
         isCollapsed={isSidebarCollapsed}
         setIsCollapsed={setIsSidebarCollapsed}
+        // Place the sidebar in the first column, spanning both rows
+        className="col-start-1 row-start-1 row-span-2"
       />
 
-      <div className="flex flex-1 flex-col overflow-y-auto">
-        <Header /> {/* <-- USE THE NEW HEADER HERE */}
-        <main className="flex-1">{children}</main>
-      </div>
+      <Header
+        // Place the header in the second column, first row
+        className="col-start-2 row-start-1"
+      />
+
+      <main className="col-start-2 row-start-2 overflow-y-auto">
+        {children}
+      </main>
     </div>
+    // --- END FIX ---
   );
 }

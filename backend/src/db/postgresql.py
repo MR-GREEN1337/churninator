@@ -37,7 +37,7 @@ class PostgresDatabase:
         self.DATABASE_URL = clean_url
 
         # --- CORRECTED SSL and connect_args LOGIC ---
-        connect_args: Dict[str, Any] = {}
+        connect_args: Dict[str, Any] = {}  # type: ignore[assignment]
 
         # Handle SSL configuration
         if settings.POSTGRES_USE_SSL or sslmode in ["require", "prefer"]:

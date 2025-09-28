@@ -1,5 +1,8 @@
-# Procfile.local
 api: uvicorn backend.src.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir backend/src
-inference: uvicorn backend.inference.server:app --port 8001
+inference: uvicorn backend.inference.server:app --port 8001 --reload
+
+# --- FIX: Execute the worker directly using the venv's python ---
+# This command is simple, robust, and avoids uv workspace issues.
 worker: dramatiq backend.worker.broker backend.worker.tasks
+
 frontend: cd web && npm run dev

@@ -1,5 +1,4 @@
-import sys
-from pathlib import Path
+# backend/src/db/migrations/env.py
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -7,10 +6,11 @@ from sqlalchemy import engine_from_config
 
 from alembic import context
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+# The python path is now managed by `prepend_sys_path = .` in alembic.ini
+from src.core.settings import get_settings
 
-from backend.src.core.settings import get_settings
-from backend.src.db.models import *  # noqa: F403 Import all models to register them with SQLModel metadata
+# Import all models to register them with SQLModel metadata
+from src.db.models import User, AgentRun, OAuthAccount, Report  # noqa: F401
 from sqlmodel import SQLModel
 
 settings = get_settings()
@@ -26,31 +26,15 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
 target_metadata = SQLModel.metadata
-
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode.
-
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
-
-    Calls to context.execute() here emit the given string to the
-    script output.
-
-    """
-    url = str(settings.DATABASE_URL)
+    """Run migrations in 'offline' mode."""
+    # Use synchronous URL for offline mode
+    sync_url = str(settings.DATABASE_URL).replace("+asyncpg", "")
     context.configure(
-        url=url,
+        url=sync_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -61,17 +45,12 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode.
-
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
-    """
-    # Get the configuration from alembic.ini
+    """Run migrations in 'online' mode."""
     alembic_config = config.get_section(config.config_ini_section)
 
-    # Override the sqlalchemy.url from the .ini file with our secure settings
-    alembic_config["sqlalchemy.url"] = str(settings.DATABASE_URL)
+    # Override the sqlalchemy.url with a synchronous version for Alembic
+    sync_url = str(settings.DATABASE_URL).replace("+asyncpg", "")
+    alembic_config["sqlalchemy.url"] = sync_url
 
     connectable = engine_from_config(
         alembic_config,

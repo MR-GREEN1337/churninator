@@ -14,7 +14,9 @@ dependencies = [
     "Pillow",
     "accelerate",
     "peft",
-    "torchvision"
+    "torchvision",
+    "num2words",
+    "loguru"
 ]
 
 [project.optional-dependencies]

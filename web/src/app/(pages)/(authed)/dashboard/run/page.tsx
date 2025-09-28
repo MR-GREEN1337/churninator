@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 
 function page() {
-  return redirect("/dashboard");
+  return redirect("/history ");
 }
 
 export default page;

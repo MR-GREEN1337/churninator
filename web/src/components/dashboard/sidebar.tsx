@@ -36,11 +36,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
 import { Logo } from "@/components/shared/logo";
-import { useAgentRuns } from "@/hooks/use-agent-runs"; // LIVE DATA HOOK
-import { AgentRun } from "@/types"; // TYPE DEFINITION
-import { Skeleton } from "@/components/ui/skeleton"; // LOADING STATE UI
+import { useAgentRuns } from "@/hooks/use-agent-runs";
+import { AgentRun } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// --- FAVICON COMPONENT WITH FALLBACK ---
 function FaviconWithFallback({
   domain,
   size = 24,
@@ -53,7 +52,6 @@ function FaviconWithFallback({
   const [faviconError, setFaviconError] = useState(false);
 
   if (!domain) {
-    // Handle null domain case gracefully
     return (
       <div
         className={cn(
@@ -103,7 +101,6 @@ function FaviconWithFallback({
   );
 }
 
-// --- Sub-components for better structure ---
 function StatusIndicator({ status }: { status: AgentRun["status"] }) {
   return (
     <div
@@ -134,7 +131,6 @@ function RunItem({
       ? `${run.task_prompt.substring(0, 30)}...`
       : run.task_prompt;
 
-  // --- COLLAPSED VIEW: FAVICON WITH TIGHTER CORNER STATUS ---
   if (isCollapsed) {
     return (
       <TooltipProvider delayDuration={0}>
@@ -143,7 +139,7 @@ function RunItem({
             <Link
               href={href}
               className={cn(
-                "relative flex h-12 w-12 items-center justify-center rounded-lg transition-transform hover:scale-105",
+                "relative flex h-10 w-10 items-center justify-center rounded-lg transition-transform hover:scale-105",
                 isActive && "bg-accent",
               )}
             >
@@ -155,8 +151,8 @@ function RunItem({
               />
               <FaviconWithFallback
                 domain={domain}
-                size={32}
-                className="h-8 w-8"
+                size={15}
+                className="h-6 w-6"
               />
               <div className="absolute -bottom-0.5 -right-0.5">
                 <StatusIndicator status={run.status} />
@@ -172,7 +168,6 @@ function RunItem({
     );
   }
 
-  // --- EXPANDED VIEW: NOW WITH FAVICON AND TEXT ---
   return (
     <Link
       href={href}
@@ -183,16 +178,16 @@ function RunItem({
           : "text-muted-foreground hover:text-accent-foreground",
       )}
     >
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex flex-1 items-center gap-3 min-w-0">
         <div className="relative shrink-0">
-          <FaviconWithFallback domain={domain} size={24} className="h-6 w-6" />
+          <FaviconWithFallback domain={domain} size={15} className="h-6 w-6" />
           <div className="absolute -bottom-0.5 -right-0.5">
             <StatusIndicator status={run.status} />
           </div>
         </div>
         <span className="truncate">{displayName}</span>
       </div>
-      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -274,30 +269,47 @@ function ThemeToggle({ isCollapsed }: { isCollapsed: boolean }) {
   );
 }
 
-// --- MAIN SIDEBAR COMPONENT ---
 export function Sidebar({
   isCollapsed,
   setIsCollapsed,
+  className,
 }: {
   isCollapsed: boolean;
   setIsCollapsed: (isCollapsed: boolean) => void;
+  className?: string;
 }) {
   const { runs: agentRuns, isLoading } = useAgentRuns();
 
-  const runGroups = useMemo(() => {
-    if (!agentRuns) return { Running: [], Recent: [] };
+  const { runGroups, hasMoreRecent, hasMoreRunning } = useMemo(() => {
+    if (!agentRuns) {
+      return {
+        runGroups: { Running: [], Recent: [] },
+        hasMoreRecent: false,
+        hasMoreRunning: false,
+      };
+    }
 
     const groups: { [key: string]: AgentRun[] } = { Running: [], Recent: [] };
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     agentRuns.forEach((run) => {
       if (run.status === "RUNNING" || run.status === "PENDING") {
         groups["Running"].push(run);
-      } else if (new Date(run.created_at) > sevenDaysAgo) {
+      } else {
         groups["Recent"].push(run);
       }
     });
-    return groups;
+
+    const hasMoreRunning = groups["Running"].length > 4;
+    const hasMoreRecent = groups["Recent"].length > 4;
+
+    groups["Running"] = groups["Running"].slice(0, 4);
+    groups["Recent"] = groups["Recent"].slice(0, 4);
+
+    return {
+      runGroups: groups,
+      hasMoreRecent: hasMoreRecent,
+      hasMoreRunning: hasMoreRunning,
+    };
   }, [agentRuns]);
 
   return (
@@ -305,6 +317,7 @@ export function Sidebar({
       className={cn(
         "hidden md:flex flex-col border-r bg-background transition-all duration-300 ease-in-out",
         isCollapsed ? "w-14" : "w-60",
+        className,
       )}
     >
       <div
@@ -315,8 +328,9 @@ export function Sidebar({
       >
         <Logo hideText={isCollapsed} />
       </div>
-      <div className="flex flex-1 flex-col gap-4 py-4">
-        <div className="px-4">
+
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="p-2">
           <TooltipProvider delayDuration={0}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -326,10 +340,8 @@ export function Sidebar({
                   size={isCollapsed ? "icon" : "default"}
                 >
                   <Link href="/dashboard">
-                    <Plus className="h-full w-full" />
-                    {!isCollapsed && (
-                      <span className="ml-2">New Agent Run</span>
-                    )}
+                    <Plus className={cn(isCollapsed ? "h-4 w-4" : "")} />
+                    {!isCollapsed && <span>New Agent Run</span>}
                   </Link>
                 </Button>
               </TooltipTrigger>
@@ -339,27 +351,36 @@ export function Sidebar({
             </Tooltip>
           </TooltipProvider>
         </div>
+
         <ScrollArea className="flex-1 px-2">
           {isLoading ? (
-            <div className="grid gap-2 px-2">
+            // --- START FIX ---
+            <div
+              className={cn(
+                "space-y-1",
+                isCollapsed &&
+                  "grid grid-cols-1 justify-items-center gap-2 pt-2",
+              )}
+            >
               {[...Array(5)].map((_, i) =>
                 isCollapsed ? (
-                  <Skeleton key={i} className="h-12 w-12 rounded-lg" />
+                  <Skeleton key={i} className="h-10 w-10 rounded-lg" />
                 ) : (
                   <Skeleton key={i} className="h-10 w-full rounded-md" />
                 ),
               )}
             </div>
           ) : (
-            <nav className="grid gap-1 px-2">
+            // --- END FIX ---
+            <nav className="grid gap-1">
               {Object.entries(runGroups).map(
                 ([groupName, groupRuns]) =>
                   groupRuns.length > 0 && (
                     <div key={groupName} className="py-2">
                       <h3
                         className={cn(
-                          "text-xs font-semibold text-muted-foreground px-3 mb-2 tracking-wider",
-                          isCollapsed && "text-center",
+                          "mb-2 px-3 text-xs font-semibold tracking-wider text-muted-foreground",
+                          isCollapsed && "px-0 text-center",
                         )}
                       >
                         {isCollapsed
@@ -381,6 +402,20 @@ export function Sidebar({
                           />
                         ))}
                       </div>
+                      {((groupName === "Recent" && hasMoreRecent) ||
+                        (groupName === "Running" && hasMoreRunning)) &&
+                        !isCollapsed && (
+                          <div className="mt-2 px-2">
+                            <Button
+                              asChild
+                              variant="link"
+                              size="sm"
+                              className="h-auto w-full justify-start p-1 text-xs text-muted-foreground hover:text-foreground"
+                            >
+                              <Link href="/history">View all...</Link>
+                            </Button>
+                          </div>
+                        )}
                     </div>
                   ),
               )}
@@ -388,28 +423,9 @@ export function Sidebar({
           )}
         </ScrollArea>
       </div>
+
       <div className="mt-auto border-t p-2 space-y-1">
         <TooltipProvider delayDuration={0}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                asChild
-                variant="ghost"
-                className={cn(
-                  "w-full",
-                  isCollapsed ? "justify-center" : "justify-start",
-                )}
-              >
-                <Link href="/history">
-                  <History className="h-4 w-4" />
-                  {!isCollapsed && <span className="ml-3">Full History</span>}
-                </Link>
-              </Button>
-            </TooltipTrigger>
-            {isCollapsed && (
-              <TooltipContent side="right">Full History</TooltipContent>
-            )}
-          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -433,6 +449,7 @@ export function Sidebar({
           <ThemeToggle isCollapsed={isCollapsed} />
         </TooltipProvider>
       </div>
+
       <div className="border-t p-2">
         <TooltipProvider delayDuration={0}>
           <Tooltip>

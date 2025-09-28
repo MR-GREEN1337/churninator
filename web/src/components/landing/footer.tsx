@@ -12,95 +12,31 @@ interface FooterProps {
   leftLinks: LinkItem[];
   rightLinks: LinkItem[];
   copyrightText: string;
-  barCount?: number;
+  barCount?: number; // This prop is unused, can be removed if not needed for other animations
 }
 
 const Footer: React.FC<FooterProps> = ({
   leftLinks,
   rightLinks,
   copyrightText,
-  barCount = 50,
 }) => {
-  const { resolvedTheme } = useTheme();
-  const waveRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const footerRef = useRef<HTMLDivElement | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
-  const animationFrameRef = useRef<number | null>(null);
-  const [waveColor, setWaveColor] = useState("hsl(var(--primary))");
-
-  useEffect(() => {
-    setWaveColor(
-      resolvedTheme === "light"
-        ? "hsl(var(--foreground))"
-        : "hsl(var(--primary))",
-    );
-  }, [resolvedTheme]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1 },
-    );
-
-    if (footerRef.current) {
-      observer.observe(footerRef.current);
-    }
-
-    return () => {
-      if (footerRef.current) {
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        observer.unobserve(footerRef.current);
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isVisible) return;
-
-    let t = 0;
-    const animateWave = () => {
-      waveRefs.current.forEach((element, index) => {
-        if (element) {
-          const sinValue = Math.sin(t + index * 0.2);
-          const offset = (sinValue + 1) * 30;
-          element.style.transform = `translateY(${offset}px)`;
-        }
-      });
-
-      t += 0.05;
-      animationFrameRef.current = requestAnimationFrame(animateWave);
-    };
-
-    animateWave();
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [isVisible]);
+  // --- START TEXT UPDATE: Align footer text with Churninator's mission ---
+  const missionStatement =
+    "Our mission is to give product teams an unfair advantage by providing autonomous, AI-driven insights into their competitors' user experience.";
+  // --- END TEXT UPDATE ---
 
   const handleBackToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
-    <footer ref={footerRef} className="relative w-full select-none mb-32 pb-12">
-      <div className="container mx-auto flex flex-col gap-12 px-6 pb-24 pt-16 md:flex-row md:justify-between">
+    <footer className="relative w-full select-none pb-12 pt-16 mb-40 pb-10">
+      <div className="container mx-auto flex flex-col gap-12 px-6 md:flex-row md:justify-between">
         {/* --- LEFT COLUMN: BRAND --- */}
         <div className="space-y-4">
           <Logo hideText={false} />
           <p className="max-w-xs text-sm text-muted-foreground">
-            Our mission is to help you master the conversations that matter most
-            through private, AI-powered practice and analysis.
+            {missionStatement}
           </p>
         </div>
 

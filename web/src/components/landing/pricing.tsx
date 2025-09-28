@@ -15,56 +15,57 @@ import { PricingSkeleton } from "./pricing-skeleton"; // Import the skeleton
 import { url } from "inspector";
 import { error } from "console";
 
-const recastPlans = [
+const churninatorPlans = [
   {
-    name: "ESSENTIAL",
-    priceId: "",
-    price: "19",
-    yearlyPrice: "15",
+    name: "SCOUT",
+    priceId: "price_...", // Replace with your actual Stripe Price ID for the free/starter plan if applicable, or null
+    price: "0",
+    yearlyPrice: "0",
     period: "per month",
     features: [
-      "5 Conversation Analyses / month",
-      "5 AI Sparring Sessions / month",
-      "Standard Rhetorical Insights",
-      "Secure & Private by Default",
-      "Email Support",
+      "3 Agent Runs / month",
+      "Standard Friction Reports",
+      "Community Support",
+      "Unlimited viewing of past runs",
     ],
-    description: "For casual users sharpening their daily interactions",
-    buttonText: "Choose Essential",
+    description:
+      "Perfect for individuals and small projects exploring competitive UX.",
+    buttonText: "Start for Free",
     isPopular: false,
   },
   {
-    name: "PRO",
-    priceId: "",
-    price: "29",
-    yearlyPrice: "23",
+    name: "HUNTER",
+    priceId: "price_...", // Replace with your actual Stripe Price ID for the pro plan
+    price: "49",
+    yearlyPrice: "39",
     period: "per month",
     features: [
-      "Unlimited Analyses & Sparring",
-      "Advanced Rhetorical Insights",
-      "Power Dynamics Reporting",
-      "Filler Word Detection",
-      "Priority Email Support",
-      "Access to All Future Updates",
+      "25 Agent Runs / month",
+      "Detailed Friction Reports",
+      "Full Video Replays of Runs",
+      "AI-Powered Insight Summaries",
+      "Priority Email & Chat Support",
     ],
-    description: "For professionals committed to mastering communication",
-    buttonText: "Get Started",
+    description:
+      "The ideal toolkit for founders and teams dedicated to winning their market.",
+    buttonText: "Upgrade to Hunter",
     isPopular: true,
   },
   {
-    name: "TEAMS",
-    priceId: null,
+    name: "ENTERPRISE",
+    priceId: null, // Custom pricing doesn't have a fixed price ID
     price: "Custom",
     yearlyPrice: "Custom",
     period: " ",
     features: [
-      "Everything in Pro",
-      "Centralized Billing & Admin",
-      "Team Performance Dashboards",
-      "Custom Onboarding & Scenarios",
-      "Dedicated Account Manager",
+      "Everything in Hunter",
+      "Unlimited Agent Runs",
+      "Team Collaboration Features",
+      "Self-Hosting & VPC Deployment",
+      "Dedicated Onboarding & Support",
     ],
-    description: "For organizations investing in their team's persuasive power",
+    description:
+      "For organizations requiring unlimited scale, advanced security, and dedicated support.",
     buttonText: "Contact Sales",
     isPopular: false,
   },
@@ -157,7 +158,7 @@ function PricingContent() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-0 pt-12">
-        {recastPlans.map((plan) => {
+        {churninatorPlans.map((plan) => {
           const isCustomPrice = isNaN(Number(plan.price));
           return (
             <motion.div

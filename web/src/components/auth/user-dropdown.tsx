@@ -1,8 +1,8 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-//import { type User } from "next-auth";
-//import { signOutAction } from "@/actions/auth";
+import Image from "next/image";
+import Link from "next/link";
+import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,9 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Image from "next/image";
-import Link from "next/link";
-import { CreditCard, LogOut, Settings } from "lucide-react";
+import { CreditCard, LogOut, Settings, LayoutDashboard } from "lucide-react";
 
 interface UserDropdownProps {
   user: {
@@ -26,8 +24,6 @@ interface UserDropdownProps {
 }
 
 export function UserDropdown({ user }: UserDropdownProps) {
-  const pathname = usePathname();
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -36,7 +32,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
             src={user.image ?? "/default-avatar.png"}
             alt={user.name ?? "User avatar"}
             fill
-            className="rounded-full"
+            className="rounded-full object-cover"
           />
         </Button>
       </DropdownMenuTrigger>
@@ -50,16 +46,13 @@ export function UserDropdown({ user }: UserDropdownProps) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-
         <DropdownMenuGroup>
-          {/* Conditionally render the Dashboard link */}
-          {pathname !== "/dashboard" && (
-            <DropdownMenuItem asChild>
-              <Link href="/dashboard">
-                <span>Dashboard</span>
-              </Link>
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard">
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              <span>Dashboard</span>
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="/settings">
               <Settings className="mr-2 h-4 w-4" />
@@ -74,15 +67,16 @@ export function UserDropdown({ user }: UserDropdownProps) {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-
-        <form action={() => {}}>
-          <button type="submit" className="w-full">
-            <DropdownMenuItem className="cursor-pointer">
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Sign out</span>
-            </DropdownMenuItem>
-          </button>
-        </form>
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            signOut({ callbackUrl: "/" });
+          }}
+          className="cursor-pointer"
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Sign out</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
