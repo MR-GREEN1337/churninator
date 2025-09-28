@@ -2,8 +2,8 @@
 
 **Autonomous AI Mystery Shopper for SaaS**
 
-![Dashboard](assets/Dashboard.png)
-![Agent](assets/Agent.png)
+![Dashboard](assets/dashboard.png)
+![Agent](assets/agent.png)
 
 ---
 
