@@ -40,7 +40,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             <span>Dashboard</span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => router.push("/dashboard/history"))}
+            onSelect={() => runCommand(() => router.push("/history"))}
           >
             <FileText className="mr-2 h-4 w-4" />
             <span>Run History</span>

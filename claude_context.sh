@@ -1,17 +1,17 @@
 #!/bin/bash
 #
-# Churninator - Context Generation Script v2.0 (Final)
-# Gathers all RELEVANT source, configs, and scripts, with robust exclusions.
+# Churninator - Context Generation Script v2.1
+# Gathers all RELEVANT source, configs, IaC, and scripts with robust exclusions.
 #
 
 echo "--- Generating complete context for The Churninator ---"
 
 # --- Step 1: Clear previous context ---
-echo "[1/5] Clearing old context file..."
+echo "[1/6] Clearing old context file..."
 > context.txt
 
 # --- Step 2: Append Forge & Backend Source (Python) ---
-echo "[2/5] Appending Forge & Backend source files (*.py)..."
+echo "[2/6] Appending Forge & Backend source files (*.py)..."
 find forge backend -type f -name "*.py" \
   -not -path "*/.venv/*" \
   -not -path "*/__pycache__/*" \
@@ -20,7 +20,7 @@ find forge backend -type f -name "*.py" \
 ' \;
 
 # --- Step 3: Append Frontend Source (Next.js) ---
-echo "[3/5] Appending Frontend source files (*.ts, *.tsx)..."
+echo "[3/6] Appending Frontend source files (*.ts, *.tsx)..."
 find web -type f \( -name "*.ts" -o -name "*.tsx" \) \
   -not -path "*/node_modules/*" \
   -not -path "*/.next/*" \
@@ -28,20 +28,32 @@ find web -type f \( -name "*.ts" -o -name "*.tsx" \) \
   echo "File: $1" >> context.txt && cat "$1" >> context.txt && echo -e "\n-e \n-e" >> context.txt
 ' sh {} \;
 
-# --- Step 4: Append Configs & Scripts (YAML & Shell) ---
-echo "[4/5] Appending Configs (*.yaml) & Scripts (*.sh)..."
-# THE FIX IS HERE: We now exclude .venv, .git, and node_modules from this global find.
-find . -type f \( -name "*.yaml" -o -name "*.yml" -o -name "*.sh" \) \
+# --- START: Step 4 (Improved) ---
+# --- Step 4: Append Infrastructure & Config Files ---
+echo "[4/6] Appending Dockerfiles, Makefiles, and Configs..."
+
+# Find Dockerfiles, docker-compose files, Makefiles, YAML configs, and shell scripts.
+find . -type f \( \
+    -name "Dockerfile*" -o \
+    -name "docker-compose*.yml" -o \
+    -name "Makefile*" -o \
+    -name "*.yaml" -o \
+    -name "*.yml" -o \
+    -name "*.sh" \
+  \) \
   -not -path "./.git/*" \
   -not -path "*/.venv/*" \
   -not -path "*/node_modules/*" \
   -not -path "./forge/data/raw/*" \
   -exec sh -c '
-  echo "File: {}" >> context.txt && cat {} >> context.txt && echo -e "\n-e \n-e" >> context.txt
-' \;
+    echo "File: {}" >> context.txt
+    cat {} >> context.txt
+    echo -e "\n-e \n-e" >> context.txt
+  ' \;
+# --- END: Step 4 (Improved) ---
 
-# --- Step 5: Append Directory Trees & Final Prompt ---
-echo "[5/5] Appending directory trees and project prompt..."
+# --- Step 5: Append Directory Trees ---
+echo "[5/6] Appending directory trees..."
 {
   echo "--- DIRECTORY TREES ---"
   echo ""
@@ -58,7 +70,8 @@ echo "[5/5] Appending directory trees and project prompt..."
   echo ""
 } >> context.txt
 
-# Append your startup context at the bottom
+# --- Step 6: Append Final Project Prompt ---
+echo "[6/6] Appending project prompt..."
 cat <<'EOT' >> context.txt
 Project Context: The Churninator - Autonomous AI Mystery Shopper for SaaS
 

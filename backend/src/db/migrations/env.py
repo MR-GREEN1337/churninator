@@ -1,4 +1,5 @@
-# backend/src/db/migrations/env.py
+import sys
+from pathlib import Path
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -15,6 +16,7 @@ from sqlmodel import SQLModel
 
 settings = get_settings()
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config

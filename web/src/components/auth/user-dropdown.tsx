@@ -70,7 +70,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
         <DropdownMenuItem
           onSelect={(e) => {
             e.preventDefault();
-            signOut({ callbackUrl: "/" });
+            signOut({ callbackUrl: "/login" });
           }}
           className="cursor-pointer"
         >

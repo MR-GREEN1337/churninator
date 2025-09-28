@@ -1,30 +1,30 @@
 # Makefile.local - For Dockerless Development on macOS
 
-# Ensure the virtual environment is activated for all commands
+# Ensure the virtual environment's bin directory is at the start of the PATH.
+# This makes commands like `pytest` and `uv` available directly.
 SHELL := /bin/bash
 PATH := $(CURDIR)/.venv/bin:$(PATH)
 PYTHONPATH := $(CURDIR)
 export PATH PYTHONPATH
 
-.PHONY: help setup run
+.PHONY: help setup run stop test
 
 help: ## ✨ Show this help message for local development
 	@echo "Usage: make -f Makefile.local [target]"
 	@echo "----------------------------------------"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_-LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 setup: ## 🛠️  Run the one-time setup for all services.
 	@echo "--- Setting up Python Virtual Environment ---"
 	python3.13 -m venv .venv
-	source .venv/bin/activate && \
-	echo "--- Installing all Python dependencies ---" && \
-	uv pip install honcho && \
-	uv pip install -e ./backend -e ./backend/worker -e ./backend/inference && \
-	echo "--- Installing Playwright browser ---" && \
-	playwright install --with-deps chromium && \
-	echo "--- Installing frontend dependencies ---" && \
+	@echo "--- Installing all Python dependencies ---"
+	# Install dependencies from all pyproject.toml files, including optional test dependencies.
+	uv pip install -e "backend[test]" -e "backend/worker" -e "backend/inference" honcho
+	@echo "--- Installing Playwright browser ---"
+	playwright install --with-deps chromium
+	@echo "--- Installing frontend dependencies ---"
 	(cd web && npm install)
-	@echo "✅ Setup complete! You can now run 'make -f Makefile.local run'"
+	@echo "✅ Setup complete! You can now run 'make -f Makefile.local run' or 'make -f Makefile.local test'"
 
 run: ## 🚀 Start all services locally using honcho.
 	@echo "🚀 Starting all Churninator services..."
@@ -37,8 +37,17 @@ run: ## 🚀 Start all services locally using honcho.
 
 stop: ## 🛑 Stop all running Churninator services started by honcho.
 	@echo "🛑 Stopping all Churninator services..."
-	-@pkill -f honcho
-	-@pkill -f uvicorn
-	-@pkill -f node
-	-@pkill -f dramatiq
+	-@pkill -f honcho || true
+	-@pkill -f uvicorn || true
+	-@pkill -f node || true
+	-@pkill -f dramatiq || true
 	@echo "✅ All services stopped."
+
+# --- START: The Corrected Test Rule ---
+test: ## 🧪 Run the backend pytest test suite.
+	@echo "🧪 Running backend test suite..."
+	# Set the ENVIRONMENT to 'test' so a separate test database is used.
+	# Call pytest directly. The PATH variable ensures the correct one from .venv is used.
+	ENVIRONMENT=test pytest backend/tests
+	@echo "✅ Tests complete."
+# --- END: The Corrected Test Rule ---

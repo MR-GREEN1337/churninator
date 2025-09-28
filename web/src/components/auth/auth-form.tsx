@@ -1,16 +1,21 @@
-// web/src/components/auth/auth-form.tsx
 "use client";
 
 import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Github, Chrome, Loader2 } from "lucide-react";
-import { signIn } from "next-auth/react";
-import { toast } from "sonner";
 
-export function AuthForm() {
-  const [isSignUp, setIsSignUp] = useState(false);
+// --- START: Accept a prop to control the default state ---
+export function AuthForm({
+  isSignUpDefault = false,
+}: {
+  isSignUpDefault?: boolean;
+}) {
+  const [isSignUp, setIsSignUp] = useState(isSignUpDefault);
+  // --- END: Accept a prop to control the default state ---
   const [isLoading, setIsLoading] = useState(false);
 
   const handleCredentialsSubmit = async (
@@ -36,19 +41,16 @@ export function AuthForm() {
             }),
           },
         );
-
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.detail || "Sign up failed.");
         }
-
         toast.success("Account created! Signing you in...");
         const signInResponse = await signIn("credentials", {
           email,
           password,
           redirect: false,
         });
-
         if (signInResponse?.ok) {
           window.location.href = "/dashboard";
         } else {
@@ -66,7 +68,6 @@ export function AuthForm() {
         password,
         redirect: false,
       });
-
       if (result?.error) {
         toast.error("Login Failed", {
           description: "Incorrect email or password.",

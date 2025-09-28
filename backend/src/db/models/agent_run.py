@@ -8,7 +8,7 @@ from pydantic import BaseModel
 if TYPE_CHECKING:
     from .user import User
 
-# --- START: Pydantic models defining the JSON structure for logs and reports ---
+# --- Pydantic models defining the JSON structure for logs and reports ---
 
 
 class RunStep(BaseModel):
@@ -18,6 +18,8 @@ class RunStep(BaseModel):
     thought: str
     action: str
     screenshot_path: str
+    observation: str
+    friction_score: int
 
 
 class FrictionPoint(BaseModel):
@@ -37,7 +39,7 @@ class FinalReport(BaseModel):
     friction_points: List[FrictionPoint]
 
 
-# --- END: Pydantic models ---
+# --- SQLModel Database Models ---
 
 
 class AgentRunBase(SQLModel):
@@ -49,17 +51,15 @@ class AgentRunBase(SQLModel):
 class AgentRun(AgentRunBase, table=True):  # type: ignore[call-arg]
     id: Optional[uuid.UUID] = Field(default_factory=uuid.uuid4, primary_key=True)
     status: str = Field(default="PENDING", index=True)
-
-    # This column will store a list of JSON objects that conform to the `RunStep` model.
     run_log: Optional[List[Dict[str, Any]]] = Field(
         default=None, sa_column=Column(JSONB)
     )
-
-    # This column will store a single JSON object that conforms to the `FinalReport` model.
     final_result: Optional[Dict[str, Any]] = Field(
         default=None, sa_column=Column(JSONB)
     )
-
+    report_path: Optional[str] = Field(default=None)
+    # --- ADDED: Field to store the selected keyframe step numbers ---
+    keyframe_indices: Optional[List[int]] = Field(default=None, sa_column=Column(JSONB))
     created_at: dt.datetime = Field(default_factory=dt.datetime.utcnow)
     owner_id: uuid.UUID = Field(foreign_key="user.id")
     owner: "User" = Relationship(back_populates="runs")
@@ -73,5 +73,6 @@ class AgentRunRead(AgentRunBase):
     id: uuid.UUID
     status: str
     created_at: dt.datetime
-    # We can also expose the final_result in the read model for the UI
     final_result: Optional[Dict[str, Any]] = None
+    # Expose the report path to the frontend
+    report_path: Optional[str] = None

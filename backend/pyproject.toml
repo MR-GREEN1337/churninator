@@ -28,5 +28,11 @@ dependencies = [
     "pillow>=11.3.0",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest>=8.2.0",
+    "pytest-asyncio>=0.23.0",
+]
+
 [tool.uv.workspace]
 members = ["worker"]

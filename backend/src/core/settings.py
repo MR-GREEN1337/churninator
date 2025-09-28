@@ -57,7 +57,8 @@ class Settings(BaseSettings):
     # --- CORS ---
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]  # For local Next.js dev
     GOOGLE_API_KEY: str | None = None
-    GOOGLE_MODEL: str = "gemini-2.5-flash-lite"
+    GOOGLE_ANALYSIS_MODEL: str = "gemini-2.5-flash-lite"
+    GOOGLE_IMAGE_MODEL: str = "gemini-2.5-flash-image-preview"
 
 
 @lru_cache

@@ -47,6 +47,7 @@ export const columns: ColumnDef<AgentRun>[] = [
           RUNNING: "secondary",
           PENDING: "outline",
           FAILED: "destructive",
+          ANALYZING: "outline",
         }[status] || "default";
 
       return (

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowRight, BotMessageSquare, Globe, Loader2 } from "lucide-react";
+import { ArrowRight, Globe, Loader2, SquareTerminal } from "lucide-react";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -71,7 +71,7 @@ export default function DashboardPage() {
         exit={{ opacity: 0, y: -20 }}
         className="w-full max-w-2xl text-center p-4"
       >
-        <BotMessageSquare className="mx-auto h-12 w-12 text-primary mb-4" />
+        <SquareTerminal className="mx-auto h-12 w-12 text-primary mb-4" />
         <h1 className="text-4xl font-bold tracking-tight mb-2">
           Churninator Command Center
         </h1>

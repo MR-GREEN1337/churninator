@@ -1,11 +1,14 @@
 from abc import ABC, abstractmethod
 from pydantic import BaseModel
+from typing import Optional
 
 
 # This model remains the clean, final output we always want
 class VLMResponse(BaseModel):
     thought: str
     action: str
+    observation: Optional[str] = None
+    friction_score: Optional[int] = None
 
 
 class VLMResponseParser(ABC):

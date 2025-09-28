@@ -1,11 +1,12 @@
 import asyncio
 import uuid
 from typing import List
+import json
 
-from fastapi import APIRouter, Depends, status, HTTPException, Request
+from fastapi import APIRouter, Depends, status, HTTPException, Request, Response
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, desc
-from starlette.responses import StreamingResponse, FileResponse, Response
 from pathlib import Path
 
 from backend.src.api.v1.dependencies import get_current_user
@@ -31,6 +32,7 @@ async def create_agent_run(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    """Creates a new agent run record and queues it for execution."""
     if not current_user.id:
         raise HTTPException(status_code=403, detail="User ID not found")
     run = await agent_runner.queue_agent_run(
@@ -44,6 +46,7 @@ async def get_agent_runs(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    """Gets all agent runs for the current authenticated user."""
     result = await db.execute(
         select(AgentRun)
         .where(AgentRun.owner_id == current_user.id)
@@ -58,6 +61,7 @@ async def get_agent_run(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    """Gets a specific agent run by its ID, ensuring it belongs to the current user."""
     result = await db.execute(
         select(AgentRun).where(
             AgentRun.id == run_id, AgentRun.owner_id == current_user.id
@@ -77,6 +81,7 @@ async def delete_agent_run(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    """Deletes a specific agent run, ensuring it belongs to the current user."""
     result = await db.execute(
         select(AgentRun).where(
             AgentRun.id == run_id, AgentRun.owner_id == current_user.id
@@ -87,6 +92,7 @@ async def delete_agent_run(
         raise HTTPException(
             status_code=404, detail="Agent run not found or access denied"
         )
+
     await db.delete(db_run)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -94,28 +100,60 @@ async def delete_agent_run(
 
 @router.get("/runs/{run_id}/screenshots/{screenshot_file}")
 async def get_run_screenshot(run_id: uuid.UUID, screenshot_file: str):
+    """Serves a screenshot file from the run's storage."""
     if ".." in screenshot_file:
         raise HTTPException(status_code=400, detail="Invalid filename.")
+
     file_path = Path(f"storage/runs/{run_id}/{screenshot_file}")
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Screenshot not found.")
     return FileResponse(str(file_path))
 
 
-# --- START: Robust Streaming Generators ---
+@router.get("/runs/{run_id}/report/download")
+async def download_run_report(
+    run_id: uuid.UUID,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Allows a user to download their generated PDF report."""
+    result = await db.execute(
+        select(AgentRun).where(
+            AgentRun.id == run_id, AgentRun.owner_id == current_user.id
+        )
+    )
+    db_run = result.scalar_one_or_none()
+
+    if not db_run or not db_run.report_path:
+        raise HTTPException(
+            status_code=404, detail="Report not found or not yet generated."
+        )
+
+    report_path = Path(db_run.report_path)
+    if not report_path.is_file():
+        raise HTTPException(
+            status_code=404, detail="Report file is missing from storage."
+        )
+
+    return FileResponse(
+        str(report_path),
+        media_type="application/pdf",
+        filename=f"Churninator_Report_{run_id}.pdf",
+    )
+
+
 async def frame_generator(run_id: str):
+    """Streams JPEG frames for the MJPEG live view."""
     pubsub = redis_client.pubsub()
     await pubsub.subscribe(f"frames:{run_id}")
     print(f"🎥 Started MJPEG frame stream for run_id: {run_id}")
     try:
         while True:
-            # Use a short timeout to periodically check for new messages
             message = await pubsub.get_message(
                 ignore_subscribe_messages=True, timeout=1.0
             )
             if message and message["type"] == "message":
                 frame_bytes = message["data"]
-                # If the worker sends the special "END" message, we stop.
                 if frame_bytes == b"END":
                     print(
                         f"🛑 Received END message. Closing MJPEG stream for run_id: {run_id}."
@@ -125,7 +163,6 @@ async def frame_generator(run_id: str):
                     b"--frame\r\n"
                     b"Content-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n"
                 )
-            # If no message, the loop continues, keeping the connection alive.
             await asyncio.sleep(0.1)
     except asyncio.CancelledError:
         print(f"🛑 MJPEG stream for run_id: {run_id} cancelled by client.")
@@ -142,6 +179,7 @@ async def stream_agent_view(run_id: str):
 
 
 async def log_generator(run_id: str, request: Request):
+    """Streams log messages using Server-Sent Events (SSE)."""
     pubsub = redis_client.pubsub()
     await pubsub.subscribe(f"logs:{run_id}")
     print(f"🎙️ Started SSE log stream for run_id: {run_id}")
@@ -156,8 +194,7 @@ async def log_generator(run_id: str, request: Request):
             )
             if message and message["type"] == "message":
                 log_data = message["data"].decode("utf-8")
-                yield f"data: {log_data}\n\n"
-            # Keep the loop alive even if there are no new logs
+                yield f"data: {json.dumps(log_data)}\n\n"  # Send as JSON string
             await asyncio.sleep(0.1)
     except asyncio.CancelledError:
         print(f"🛑 SSE log stream for run_id: {run_id} cancelled by server.")
@@ -171,6 +208,3 @@ async def stream_agent_logs(run_id: str, request: Request):
     return StreamingResponse(
         log_generator(run_id, request), media_type="text/event-stream"
     )
-
-
-# --- END: Robust Streaming Generators ---
