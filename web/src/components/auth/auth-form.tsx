@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Github, Chrome, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { FaGithub, FaGoogle } from "react-icons/fa";
 
 // --- START: Accept a prop to control the default state ---
 export function AuthForm({
@@ -134,7 +135,7 @@ export function AuthForm({
             onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
             disabled={isLoading}
           >
-            <Github className="mr-2 h-4 w-4" /> GitHub
+            <FaGithub className="mr-2 h-4 w-4" /> GitHub
           </Button>
           <Button
             variant="outline"
@@ -142,7 +143,7 @@ export function AuthForm({
             onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
             disabled={isLoading}
           >
-            <Chrome className="mr-2 h-4 w-4" /> Google
+            <FaGoogle className="mr-2 h-4 w-4" /> Google
           </Button>
         </div>
       </div>

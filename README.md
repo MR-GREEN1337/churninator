@@ -1,122 +1,108 @@
-# Churninator
+## In command center, implement prompt instruction alongside url
 
-**Autonomous AI Mystery Shopper for SaaS**
+<p align="center">
+  <img src="web/src/app/favicon.ico" alt="Churninator Logo" width="128">
+</p>
 
-![Dashboard](assets/dashboard.png)
-![Agent](assets/agent.png)
+<h1 align="center">The Churninator</h1>
 
----
+<p align="center">
+  <strong>The Autonomous AI Mystery Shopper for SaaS.</strong>
+  <br />
+  Find your competitor's fatal flaw before they do.
+</p>
 
-## 🚀 Project Overview
-
-Churninator is an open-source, AI-powered platform that autonomously analyzes the signup and onboarding experience of any web application. Acting as a "mystery shopper," it identifies UX friction points, conversion killers, and usability issues, then generates a detailed, interactive report for product teams.
-
----
-
-## 🏗️ System Architecture
-
-Churninator is a multi-component, cloud-native platform composed of three main layers:
-
-### 1. The Forge (`forge/`)
-**Role:** AI Workshop & ML Pipeline
-**Function:** Contains scripts for the two-stage AGUVIS fine-tuning methodology:
-- **Stage 1: Grounding**
-- **Stage 2: Reasoning**
-
-Designed for full-scale training on remote cloud GPUs (e.g., Vast.ai).
+<p align="center">
+  <a href="https://github.com/your-username/churninator/stargazers"><img src="https://img.shields.io/github/stars/your-username/churninator?style=social" alt="GitHub Stars"></a>
+  <a href="https://github.com/your-username/churninator/blob/main/LICENSE"><img src="https://img.shields.io/github/license/your-username/churninator" alt="License"></a>
+  <a href="https://twitter.com/your-twitter"><img src="https://img.shields.io/twitter/follow/your-twitter?style=social&logo=twitter" alt="Follow on Twitter"></a>
+</p>
 
 ---
 
-### 2. Backend (`backend/`)
-**Role:** Mission Control & Production Engine
+![Churninator Live Agent View](/assets/agent.png)
 
-**Sub-components:**
-- **API / Control Plane (`backend/api/`)**: FastAPI server handling user requests and job queuing via Redis.
-- **Agent Worker (`backend/worker/`)**: Scalable Celery workers running Playwright in virtual displays (Xvfb) for autonomous browsing tasks.
-- **Inference Server (`backend/inference/`)**: Hosts the fine-tuned Churninator model (e.g., via vLLM), acting as the brain for workers.
+**Churninator** is an open-source AI platform that autonomously analyzes the signup and onboarding experience of any web application. It acts as a tireless "mystery shopper," navigating complex user flows to identify friction points, conversion killers, and usability issues that cause users to churn.
 
----
+The output isn't just a log; it's a **premium, AI-generated UX audit**, complete with visual "before and after" mockups, providing product teams with the actionable intelligence they need to win their market.
 
-### 3. Frontend (`web/`)
-**Role:** Observatory & Executive Dashboard
-**Function:** Next.js application featuring a live-view dashboard:
-- WebSockets for streaming logs and agent "thoughts"
-- MJPEG streaming for browser views
-- Interactive UX issue reporting
+## ✨ Key Features
 
----
+*   **🤖 Autonomous Agent:** Powered by a fine-tuned multimodal AI that understands and interacts with modern web apps like a human.
+*   **📺 Live Observatory:** Watch the agent's browser view and "inner monologue" in real-time as it executes its mission.
+*   **📄 AI-Powered Friction Reports:** Receive detailed, shareable PDF reports that don't just identify problems—they propose and visualize solutions with AI-generated design mockups.
+*   **🔧 The Forge:** A complete, open-source ML pipeline to fine-tune your own specialized agents for any task.
+*   **☁️ SaaS & Self-Hosted:** Use our upcoming managed platform, Churninator Cloud, or self-host the entire system for maximum control.
 
-## ⚡ User Experience
+## 🏗️ Architecture Overview
 
-1. Submit a target URL and task through the frontend.
-2. The API queues the job for processing.
-3. A Worker executes the task in a sandboxed browser environment, streaming its actions and insights in real-time to the frontend.
-4. A detailed report is generated summarizing UX issues, friction points, and actionable recommendations.
+Churninator is a production-grade, multi-component system designed for scale and reliability.
 
----
+![Architecture Diagram](/assets/architecture.png)
 
-## 🛠️ Technologies
+1.  **Frontend (`web/`):** A Next.js dashboard for creating and observing agent runs. It features real-time log streaming (SSE) and video (MJPEG).
+2.  **Backend (`backend/`):** A high-performance FastAPI application that serves the API, manages the database, and queues jobs with Redis.
+3.  **Worker (`backend/worker/`):** Scalable Dramatiq workers that run Playwright in a headless environment to perform the browser automation.
+4.  **Inference Server (`backend/inference/`):** A dedicated server that hosts the fine-tuned `SmolVLM` model, acting as the remote "brain" for the workers.
+5.  **The Forge (`forge/`):** A suite of Python scripts for our two-stage model fine-tuning process, enabling the creation of new, powerful agents.
 
-- **Backend:** Python, FastAPI, Celery, Redis, PostgreSQL
-- **Frontend:** Next.js, TypeScript, WebSockets, MJPEG streaming
-- **AI/ML:** PyTorch, vLLM, AGUVIS fine-tuning
-- **Deployment:** Docker, Cloud GPUs (Vast.ai compatible)
+## 🚀 Getting Started
 
----
+You can run the entire Churninator platform locally for development and testing.
 
-## 📂 Repository Structure
+### Prerequisites
 
-```
+*   Python 3.11+
+*   Node.js 18+ & npm
+*   [Postgres.app](https://postgresapp.com/) (or another local PostgreSQL server)
+*   A Google Gemini API Key
 
-forge/       # AI model training pipeline
-backend/     # API, workers, inference server
-web/         # Next.js frontend dashboard
-docker/      # Dockerfiles for deployment
-eval/        # Evaluation scripts
-train/       # Training datasets & scripts
-utils/       # Helper modules
-notebooks/   # Experiments & analysis
+### Local Development Setup
 
-```
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/mr-green1337/churninator.git
+    cd churninator
+    ```
 
----
+2.  **Configure Environment:**
+    *   Copy the example environment file: `cp .env.example .env`
+    *   Set up a local PostgreSQL database (see instructions [here](#part-1-setting-up-a-local-postgresql-database-on-macos)).
+    *   Fill in your `DATABASE_URL` and `GOOGLE_API_KEY` in the `.env` file.
 
-## 💡 Usage
+3.  **Run the automated setup script:**
+    This will create a Python virtual environment, install all dependencies for the backend and frontend, and download the necessary Playwright browser.
+    ```bash
+    make -f Makefile.local setup
+    ```
 
-### 1. Backend
+4.  **Run the application:**
+    This will start all four services (frontend, API, worker, inference) concurrently using `honcho`.
+    ```bash
+    make -f Makefile.local run
+    ```
+    You can now access the dashboard at `http://localhost:3000`.
 
-```bash
-cd backend
-docker build -f Dockerfile.api -t churninator-api .
-docker run -p 8000:8000 churninator-api
-```
+## ☁️ Churninator Cloud
 
-### 2. Worker
+While the entire Churninator platform is open-source and free to self-host, we are building a managed **Churninator Cloud** platform that provides:
+*   One-click agent deployment without any setup.
+*   Team collaboration features and shared reports.
+*   Access to our continuously improved, state-of-the-art AI models.
+*   Enterprise-grade security and support.
 
-```bash
-cd backend/worker
-docker build -f Dockerfile.worker -t churninator-worker .
-docker run -e REDIS_URL=redis://... churninator-worker
-```
-
-### 3. Frontend
-
-```bash
-cd web
-npm install
-npm run dev
-```
+**[➡️ Sign up for the private beta](https://your-saas-website.com)**
 
 ---
+
+## 🤝 Contributing
+
+We are building Churninator in the open and welcome contributions of all kinds! Whether you're a developer, a designer, or a UX enthusiast, we'd love your help.
+
+*   Check out our [Contribution Guide](CONTRIBUTING.md) to get started.
+*   View our [public roadmap](https://github.com/users/your-username/projects/1) to see what's next.
+*   Submit bug reports and feature requests on the [Issues](https://github.com/your-username/churninator/issues) page.
 
 ## 📜 License
 
-MIT License
-
----
-
-## 👏 Contributions
-
-Contributions are welcome! Please open issues or pull requests to improve the platform.
-
----
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

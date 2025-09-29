@@ -13,3 +13,19 @@ dependencies = [
     "openai>=1.55.0",
     "psycopg2>=2.9.10",
 ]
+
+# --- START FIX ---
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-mock",
+]
+# --- END FIX ---
+
+[tool.uv.sources]
+backend = { path = ".." }
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

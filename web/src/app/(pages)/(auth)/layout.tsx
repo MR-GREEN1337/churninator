@@ -4,7 +4,9 @@ import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
-import { BrandPanel } from "@/components/auth/brand-panel"; // Import the new component
+import { BrandPanel } from "@/components/auth/brand-panel";
+import { Logo } from "@/components/shared/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   const { status } = useSession();
@@ -24,7 +26,13 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <main className="flex min-h-screen w-full bg-background">
       {/* Left Panel: The Auth Form */}
-      <div className="flex w-full items-center justify-center p-8 lg:w-1/2">
+      <div className="relative flex w-full items-center justify-center p-8 lg:w-1/2">
+        <div className="absolute top-8 left-8">
+          <Logo hideText={false} />
+        </div>
+        <div className="absolute top-8 right-8">
+          <ThemeToggle isCollapsed={true} />
+        </div>
         {children}
       </div>
 

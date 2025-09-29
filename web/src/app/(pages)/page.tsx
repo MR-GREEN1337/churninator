@@ -5,6 +5,7 @@ import { Pricing } from "@/components/landing/pricing";
 import { Faq } from "@/components/landing/faq";
 import { Cta } from "@/components/landing/cta";
 import Footer from "@/components/landing/footer";
+import { Testimonials } from "@/components/landing/testimonials";
 
 const footerLeftLinks = [
   { href: "#features", label: "Features" },
@@ -15,14 +16,14 @@ const footerLeftLinks = [
 
 const footerRightLinks = [
   { href: "#", label: "Twitter" },
-  { href: "#", label: "GitHub" }, // Changed to GitHub
+  { href: "https://github.com/MR-GREEN1337/churninator", label: "GitHub" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
 ];
 
 // Reusable separator component to connect the inner vertical lines
 const SectionSeparator = () => (
-  <div className="relative" aria-hidden="true">
+  <div className="relative z-10" aria-hidden="true">
     <div className="absolute inset-0 flex items-center">
       <div
         className="w-full border-t border-border"
@@ -45,7 +46,7 @@ export default function Home() {
         {/* The decorative vertical lines */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-[-1] hidden lg:block [mask-image:linear-gradient(to_bottom,black_0%,black_90%,transparent_100%)]"
+          className="pointer-events-none absolute inset-0 z-10 hidden lg:block [mask-image:linear-gradient(to_bottom,black_0%,black_90%,transparent_100%)]"
         >
           {/* Left pair of lines */}
           <div className="absolute left-[5%] top-0 h-full w-px bg-border" />
@@ -58,6 +59,8 @@ export default function Home() {
 
         {/* Page sections */}
         <Features />
+        <SectionSeparator />
+        <Testimonials />
         <SectionSeparator />
         <Pricing />
         <SectionSeparator />

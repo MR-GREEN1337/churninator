@@ -19,10 +19,9 @@ dependencies = [
     "uvicorn>=0.37.0",
     "dramatiq[redis]>=1.16.5",
     "playwright",
-    "passlib[bcrypt]>=1.7.4",
     "psycopg2>=2.9.10",
     "python-multipart>=0.0.20",
-    "bcrypt>=4.1.2",
+    "bcrypt==4.3.0",
     "stripe>=12.5.1",
     "google-generativeai>=0.8.5",
     "pillow>=11.3.0",
@@ -32,6 +31,7 @@ dependencies = [
 test = [
     "pytest>=8.2.0",
     "pytest-asyncio>=0.23.0",
+    "pytest-mock",
 ]
 
 [tool.uv.workspace]

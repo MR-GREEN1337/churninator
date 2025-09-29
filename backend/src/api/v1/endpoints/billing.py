@@ -2,6 +2,8 @@
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request, Body
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy import select
+from datetime import datetime
 
 from backend.src.core.settings import get_settings
 from backend.src.db.postgresql import get_session
@@ -35,8 +37,10 @@ async def create_checkout_session(
             payment_method_types=["card"],
             line_items=[{"price": price_id, "quantity": 1}],
             mode="subscription",
-            success_url=f"{settings.CLIENT_URL}/dashboard?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{settings.CLIENT_URL}/billing",
+            # --- START: Updated URLs ---
+            success_url=f"{settings.CLIENT_URL}/dashboard/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{settings.CLIENT_URL}/dashboard/payment/cancel",
+            # --- END: Updated URLs ---
         )
         return {"sessionId": checkout_session.id}
     except Exception as e:
@@ -54,7 +58,7 @@ async def create_portal_session(
     try:
         portal_session = stripe.billing_portal.Session.create(
             customer=current_user.stripe_customer_id,
-            return_url=f"{settings.CLIENT_URL}/billing",
+            return_url=f"{settings.CLIENT_URL}/settings/billing",  # Return to the billing page after portal session
         )
         return {"url": portal_session.url}
     except Exception as e:
@@ -73,7 +77,7 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_sessio
         )
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid payload")
-    except stripe.error.SignatureVerificationError:
+    except stripe.SignatureVerificationError:
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     # Handle the event
@@ -82,8 +86,12 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_sessio
         customer_id = session.get("customer")
         subscription_id = session.get("subscription")
 
-        # Update user with subscription details
-        user = await db.get(User, {"stripe_customer_id": customer_id})
+        # Find user by stripe_customer_id
+        result = await db.execute(
+            select(User).where(User.stripe_customer_id == customer_id)
+        )
+        user = result.scalar_one_or_none()
+
         if user:
             user.subscription_id = subscription_id
             subscription = stripe.Subscription.retrieve(subscription_id)
@@ -92,6 +100,29 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_sessio
             db.add(user)
             await db.commit()
 
-    # Add more event handlers here (e.g., invoice.payment_succeeded, customer.subscription.deleted)
+    # Handle subscription updates and cancellations
+    if event["type"] in [
+        "customer.subscription.updated",
+        "customer.subscription.deleted",
+    ]:
+        subscription = event["data"]["object"]
+        subscription_id = subscription.id
+
+        """result = await db.execute(
+            select(User).where(User.subscription_id == subscription_id)
+        )
+        user: User = result.scalar_one_or_none()"""
+
+        if user:
+            user.subscription_status = subscription.status
+            # If the subscription is deleted, we can nullify some fields
+            if subscription.status == "canceled":
+                user.subscription_ends_at = (
+                    datetime.fromtimestamp(subscription.cancel_at)
+                    if subscription.cancel_at
+                    else None
+                )
+            db.add(user)
+            await db.commit()
 
     return {"status": "success"}

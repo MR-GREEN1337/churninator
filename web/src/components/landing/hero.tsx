@@ -69,7 +69,7 @@ export function HeroSection() {
                     </div>
                   </Link>
 
-                  <h1 className="mt-10 max-w-4xl mx-auto text-balance text-5xl font-mono tracking-tight md:text-7xl lg:mt-16 xl:text-[5.25rem] md:leading-tight">
+                  <h1 className="mt-10 max-w-4xl mx-auto text-balance text-6xl font-light tracking-tight md:text-7xl lg:mt-16 xl:text-[5.25rem] md:leading-tight">
                     Find and Eliminate Churn. Before it happens.
                   </h1>
                   <p className="mx-auto mt-8 max-w-2xl text-balance text-lg leading-relaxed text-muted-foreground">
