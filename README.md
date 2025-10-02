@@ -13,9 +13,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/your-username/churninator/stargazers"><img src="https://img.shields.io/github/stars/your-username/churninator?style=social" alt="GitHub Stars"></a>
-  <a href="https://github.com/your-username/churninator/blob/main/LICENSE"><img src="https://img.shields.io/github/license/your-username/churninator" alt="License"></a>
-  <a href="https://twitter.com/your-twitter"><img src="https://img.shields.io/twitter/follow/your-twitter?style=social&logo=twitter" alt="Follow on Twitter"></a>
+  <a href="https://github.com/MR-GREEN1337/churninator/stargazers"><img src="https://img.shields.io/github/stars/MR-GREEN1337/churninator?style=social" alt="GitHub Stars"></a>
+  <a href="https://github.com/MR-GREEN1337/churninator/blob/main/LICENSE"><img src="https://img.shields.io/github/license/MR-GREEN1337/churninator" alt="License"></a>
+  <a href="https://x.com/MR_GREEN1337"><img src="https://img.shields.io/twitter/follow/MR_GREEN1337?style=social&logo=twitter" alt="Follow on Twitter"></a>
 </p>
 
 ---
@@ -61,7 +61,7 @@ You can run the entire Churninator platform locally for development and testing.
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/mr-green1337/churninator.git
+    git clone https://github.com/MR-GREEN1337/churninator.git
     cd churninator
     ```
 
