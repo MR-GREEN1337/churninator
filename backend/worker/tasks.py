@@ -4,7 +4,6 @@ import redis.asyncio as redis
 import json
 import base64
 import os
-import subprocess
 from pathlib import Path
 from playwright.async_api import async_playwright, Page
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -21,6 +20,17 @@ from forge.utils.function_parser import parse_function_call
 settings = get_settings()
 
 # --- Helper Functions ---
+
+
+def load_prompt(filename: str) -> str:
+    """Loads a prompt from the 'prompts' directory."""
+    prompt_path = Path(__file__).parent / "prompts" / filename
+    with open(prompt_path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+# Load the system prompt once at the module level for efficiency
+AGENT_SYSTEM_PROMPT = load_prompt("agent_system_prompt.txt")
 
 
 async def execute_action(
@@ -96,29 +106,6 @@ async def agent_task_logic(
     browser = None
     structured_log: list[RunStep] = []
 
-    SYSTEM_PROMPT = """You are a meticulous AI agent designed to analyze user flows. Your task is to follow an objective and decide the best single action to take at each step based on a screenshot and your history.
-
-Your response MUST contain four distinct XML-style tags:
-1.  `<think>`: Your step-by-step reasoning on what you see and what your next action should be.
-2.  `<code>`: The single tool call you will execute.
-3.  `<observation>`: A brief, one-sentence summary of the current screen's purpose.
-4.  `<friction>`: An integer from 0 (perfectly smooth) to 10 (completely blocked) representing the user friction at this step.
-
-Example Response:
-<think>
-The user wants to sign in. I see input fields for username and password. I will type the username first.
-</think>
-<code>
-type(text='testuser')
-</code>
-<observation>
-The screen presents a standard login form with username and password fields.
-</observation>
-<friction>
-1
-</friction>
-"""
-
     async for session in db.get_db_session():
         try:
             await update_run_status(session, run_id, "RUNNING")
@@ -149,10 +136,12 @@ The screen presents a standard login form with username and password fields.
                             for s in structured_log
                         ]
                     )
-                    prompt_for_vlm = f"{SYSTEM_PROMPT}\n\n<history>\n{history_for_prompt}\n</history>\n\nObjective: {task_prompt}"
 
+                    user_content = f"{AGENT_SYSTEM_PROMPT}\n\n**Mission History**\n<history>\n{history_for_prompt}\n</history>\n\n**Your Current Mission Objective:**\n<objective>{task_prompt}</objective>"
+
+                    # The inference server is responsible for adding the final model-specific tokens.
                     vlm_response = await vlm_provider.get_next_action(
-                        image_base64, prompt_for_vlm
+                        image_base64, user_content
                     )
 
                     await redis_client.publish(
@@ -291,8 +280,8 @@ async def report_analysis_logic(
 async def design_report_logic(
     run_id: str, db: PostgresDatabase, redis_client: redis.Redis
 ):
-    """Phase 3, Part 2: The Designer. Generates the final PDF report."""
-    print(f"🎨 [DESIGNER] Starting PDF report generation for run_id: {run_id}")
+    """Phase 3, Part 2: The Designer. Generates the final Markdown report."""
+    print(f"🎨 [DESIGNER] Starting Markdown report generation for run_id: {run_id}")
     run_storage_path = Path(f"storage/runs/{run_id}")
 
     async for session in db.get_db_session():
@@ -314,50 +303,38 @@ async def design_report_logic(
                     after_image.save(after_image_path)
                     image_pairs.append(
                         (
-                            str(before_image_path.relative_to(run_storage_path)),
-                            str(after_image_path.relative_to(run_storage_path)),
+                            # Pass relative paths for Markdown images
+                            str(before_image_path.name),
+                            str(after_image_path.name),
                         )
                     )
 
-            latex_doc_str = gemini_provider.author_latex_report(
+            # Generate the Markdown document string
+            markdown_doc_str = gemini_provider.author_markdown_report(
                 analysis=analysis_data,
                 target_url=run.target_url,
                 task_prompt=run.task_prompt,
                 image_pairs=image_pairs,
             )
 
-            tex_file_path = run_storage_path / "report.tex"
-            tex_file_path.write_text(latex_doc_str, encoding="utf-8")
+            # Save the Markdown file
+            md_file_path = run_storage_path / "report.md"
+            md_file_path.write_text(markdown_doc_str, encoding="utf-8")
 
-            for _ in range(2):
-                process = subprocess.run(
-                    [
-                        "pdflatex",
-                        "-interaction=nonstopmode",
-                        "-output-directory",
-                        str(run_storage_path),
-                        str(tex_file_path),
-                    ],
-                    capture_output=True,
-                    text=True,
-                    cwd=run_storage_path,
-                )
-
-            if process.returncode != 0:
-                print(f"LaTeX compilation failed! Log:\n{process.stdout}")
-                raise Exception("PDF generation failed.")
-
-            pdf_path = run_storage_path / "report.pdf"
-            if pdf_path.exists():
-                run.report_path = str(pdf_path)
+            if md_file_path.exists():
+                run.report_path = str(md_file_path)
                 run.status = "COMPLETED"
                 session.add(run)
                 await session.commit()
-                print(f"✅ [DESIGNER] Successfully generated PDF report at {pdf_path}")
+                print(
+                    f"✅ [DESIGNER] Successfully generated Markdown report at {md_file_path}"
+                )
             else:
-                raise Exception("PDF file not found after successful compilation.")
+                raise Exception("Markdown file not found after generation.")
         except Exception as e:
-            print(f"❌ [DESIGNER] FATAL ERROR during PDF generation for {run_id}: {e}")
+            print(
+                f"❌ [DESIGNER] FATAL ERROR during Markdown generation for {run_id}: {e}"
+            )
             if run:
                 run.status = "FAILED"
                 session.add(run)

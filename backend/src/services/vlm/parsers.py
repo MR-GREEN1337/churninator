@@ -8,16 +8,23 @@ class Stage2Parser(VLMResponseParser):
     """
     Parses the <think>...</think><code>...</code> format that our
     fine-tuned models (and properly prompted proprietary models) produce.
+    This version is hardened to handle incomplete or missing XML tags.
     """
 
     def parse(self, text: str) -> VLMResponse:
+        # Search for each tag independently, allowing for missing tags.
         thought_match = re.search(r"<think>(.*?)</think>", text, re.DOTALL)
         code_match = re.search(r"<code>(.*?)</code>", text, re.DOTALL)
+        observation_match = re.search(
+            r"<observation>(.*?)</observation>", text, re.DOTALL
+        )
+        friction_match = re.search(r"<friction>(.*?)</friction>", text, re.DOTALL)
 
+        # Extract content if the tag exists, otherwise provide a default.
         thought = (
             thought_match.group(1).strip()
             if thought_match
-            else "Error: Could not parse thought."
+            else "Warning: No thought provided by the model."
         )
 
         if code_match:
@@ -29,9 +36,29 @@ class Stage2Parser(VLMResponseParser):
             else:
                 action = f"TERMINATE('Parsing Error: Invalid action in code block: {code_content}')"
         else:
-            action = "TERMINATE('Parsing Error: No code block found.')"
+            action = (
+                "TERMINATE('Parsing Error: No code block found in model response.')"
+            )
 
-        return VLMResponse(thought=thought, action=action)
+        observation = observation_match.group(1).strip() if observation_match else ""
+
+        friction_score = 0
+        if friction_match is not None:
+            group_val = friction_match.group(1)
+            if group_val:
+                digits = re.search(r"\d+", group_val)
+                if digits:
+                    try:
+                        friction_score = int(digits.group())
+                    except ValueError:
+                        friction_score = 0
+
+        return VLMResponse(
+            thought=thought,
+            action=action,
+            observation=observation,
+            friction_score=friction_score,
+        )
 
 
 class HuggingFaceGenericParser(VLMResponseParser):

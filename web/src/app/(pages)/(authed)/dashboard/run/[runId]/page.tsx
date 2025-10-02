@@ -60,7 +60,6 @@ function FinalReportDisplay({
             </CardTitle>
             <CardDescription>{report.summary}</CardDescription>
           </div>
-          {/* --- START: Download Button Implementation --- */}
           <div className="ml-auto flex items-center gap-2">
             {runDetails.report_path && (
               <Button asChild size="sm">
@@ -69,12 +68,11 @@ function FinalReportDisplay({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <FileDown className="mr-2 h-4 w-4" /> Download PDF
+                  <FileDown className="mr-2 h-4 w-4" /> Download Report
                 </a>
               </Button>
             )}
           </div>
-          {/* --- END: Download Button Implementation --- */}
         </CardHeader>
         <CardContent className="p-6 text-sm">
           <div className="grid gap-4 sm:grid-cols-3">

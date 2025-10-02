@@ -21,7 +21,7 @@ setup: ## 🛠️  Run the one-time setup for all services.
 	# Install dependencies from all pyproject.toml files, including optional test dependencies.
 	uv pip install -e "backend[test]" -e "backend/worker" -e "backend/inference" honcho
 	@echo "--- Installing Playwright browser ---"
-	playwright install --with-deps chromium
+	cd backend/worker && uv run playwright install --with-deps chromium
 	@echo "--- Installing frontend dependencies ---"
 	(cd web && npm install)
 	@echo "✅ Setup complete! You can now run 'make -f Makefile.local run' or 'make -f Makefile.local test'"

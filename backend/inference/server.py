@@ -65,17 +65,19 @@ async def predict(request: InferenceRequest):
     # Decode the base64 image
     image = Image.open(BytesIO(base64.b64decode(request.image_base64))).convert("RGB")
 
-    # CRITICAL FIX: SmolVLM requires <image> token in the prompt to match the number of images
-    # The model expects the image token to be present in the text
-    prompt_with_image = f"<image>\nUser: {request.prompt}\nAssistant:"
+    # --- START FIX: Restore the model-specific prompt formatting ---
+    # The model expects the <image> token to be present in the text to correctly
+    # associate the image with the prompt content.
+    prompt_with_template = f"<image>\nUser: {request.prompt}\nAssistant:"
 
     try:
-        # Process the inputs with the correct format
+        # Process the inputs with the correct, wrapped prompt format.
         inputs = processor(
-            text=prompt_with_image,
+            text=prompt_with_template,
             images=[image],
             return_tensors="pt",
         ).to(model.device)
+        # --- END FIX ---
 
         # Generate response
         with torch.no_grad():
@@ -96,7 +98,7 @@ async def predict(request: InferenceRequest):
             cleaned_text = generated_text.split("Assistant:")[-1].strip()
         else:
             # Fallback: remove the original prompt
-            cleaned_text = generated_text.replace(prompt_with_image, "").strip()
+            cleaned_text = generated_text.replace(prompt_with_template, "").strip()
 
         response = InferenceResponse(generated_text=cleaned_text)
         logger.info(f"Generated response: {response}")

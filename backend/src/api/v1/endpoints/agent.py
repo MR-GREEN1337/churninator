@@ -116,7 +116,7 @@ async def download_run_report(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Allows a user to download their generated PDF report."""
+    """Allows a user to download their generated report."""
     result = await db.execute(
         select(AgentRun).where(
             AgentRun.id == run_id, AgentRun.owner_id == current_user.id
@@ -137,8 +137,8 @@ async def download_run_report(
 
     return FileResponse(
         str(report_path),
-        media_type="application/pdf",
-        filename=f"Churninator_Report_{run_id}.pdf",
+        media_type="text/markdown",
+        filename=f"Churninator_Report_{run_id}.md",
     )
 
 

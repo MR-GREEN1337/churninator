@@ -1,59 +1,33 @@
-// web/src/components/landing/cta.tsx
-import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import { siteConfig } from "@/lib/config";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 
-export function Cta() {
+export function CTASection() {
+  const { ctaSection } = siteConfig;
+
   return (
-    <section className="relative py-20">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 top-1/2 -z-10 h-1/2 w-full bg-background"
-      />
-      <div className="mx-auto max-w-5xl px-6">
-        <div className="relative overflow-hidden rounded-2xl bg-primary/5 px-8 py-16 text-center shadow-lg dark:bg-primary/10 border border-primary/10">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 opacity-20 dark:opacity-10"
-          >
-            <svg
-              viewBox="0 0 40 40"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-full w-full text-primary"
-            >
-              <path
-                d="M20 4L36 20L20 36L4 20Z"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M20 12V28M12 20H28"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+    <section
+      id="cta"
+      className="flex flex-col items-center justify-center w-full pt-12 pb-12 px-6"
+    >
+      <div className="w-full mx-auto">
+        <div className="max-w-6xl mx-auto">
+          <div className="h-[400px] md:h-[400px] overflow-hidden shadow-xl w-full border border-border rounded-xl bg-secondary relative z-20">
+            <div className="absolute inset-0 -top-32 md:-top-40 flex flex-col items-center justify-center">
+              <h1 className="text-white text-4xl md:text-7xl font-medium tracking-tighter max-w-xs md:max-w-xl text-center">
+                {ctaSection.title}
+              </h1>
+              <div className="absolute bottom-10 flex flex-col items-center justify-center gap-2">
+                <Link
+                  href={ctaSection.button.href}
+                  className="bg-white text-black font-semibold text-sm h-10 w-fit px-4 rounded-full flex items-center justify-center shadow-md"
+                >
+                  {ctaSection.button.text}
+                </Link>
+                <span className="text-white text-sm">{ctaSection.subtext}</span>
+              </div>
+            </div>
           </div>
-          {/* --- START TEXT UPDATE --- */}
-          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Gain Your Unfair Advantage.
-          </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Your competitors are losing customers during onboarding. Find out
-            where. Deploy your first agent in the next 2 minutes and get the
-            insights you need to win.
-          </p>
-          <Button asChild size="lg" className="mt-8 group">
-            <Link href="/dashboard">
-              Launch Your First Agent
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </Button>
-          {/* --- END TEXT UPDATE --- */}
         </div>
       </div>
     </section>

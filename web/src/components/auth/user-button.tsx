@@ -1,18 +1,15 @@
-"use client";
-
-import { useSession } from "next-auth/react";
+// Remove 'use client' if it's there
+import { getServerSession } from "next-auth"; // <-- Import getServerSession
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // <-- Import authOptions
 import { UserDropdown } from "./user-dropdown";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { Skeleton } from "../ui/skeleton";
 
-export function UserButton() {
-  const { data: session, status } = useSession();
-
-  // While the session is loading, show a placeholder
-  if (status === "loading") {
-    return <Skeleton className="h-8 w-8 rounded-full" />;
-  }
+// Make the component async
+export async function UserButton() {
+  // Fetch session on the server
+  const session = await getServerSession(authOptions);
 
   // If there's no user session, show login/signup buttons
   if (!session?.user) {
@@ -22,7 +19,7 @@ export function UserButton() {
           <Link href="/login">Login</Link>
         </Button>
         <Button asChild size="sm">
-          <Link href="/login">Sign Up</Link>
+          <Link href="/signup">Sign Up</Link>
         </Button>
       </>
     );
